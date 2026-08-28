@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seshat-viz"
+version = "0.1.0"
+description = "Thesis-grade visualizations of SESHAT (SCG benchmark harness) measurements"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT OR Apache-2.0"
+license-files = ["LICENSE-MIT", "LICENSE-APACHE"]
+authors = [{name = "Tian Tomascsik", email = "tian.tomascsik@gmail.com"}]
+dependencies = [
+    "matplotlib>=3.7",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "seaborn>=0.13",
+]
+
+[project.urls]
+Repository = "https://github.com/TianTomascsik/seshat-viz"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+seshat-viz = "seshat_viz.cli:main"
+
+[tool.setuptools]
+packages = ["seshat_viz", "seshat_viz.figures"]

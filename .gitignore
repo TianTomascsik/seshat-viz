@@ -1,0 +1,25 @@
+# Generated figure sets (regenerate from a SESHAT results directory on demand)
+# Root-anchored: seshat_viz/figures/ is the figure-recipe package, not output.
+/figures/
+/figures-nochrome/
+/figures-thesis/
+
+# Python virtualenv & caches
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local working artifacts
+coverage-*.json
+*.bak-*/
+
+# Build output
+build/
+dist/
+*.egg-info/
+
+# OS noise
+.DS_Store
