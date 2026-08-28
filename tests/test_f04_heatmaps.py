@@ -17,7 +17,7 @@ Guards four caption/disclosure defects:
     bound the encrypted rows' residual growth.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f4.py`) so it needs no extra dev dependency.
+(`python tests/test_f04_heatmaps.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

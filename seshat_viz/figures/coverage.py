@@ -50,8 +50,8 @@ def _load_plan(run_dir: Path) -> "tuple[int, set[str], Path] | None":
     ``executed + skip-logged`` is only a lower bound on the plan — a skip record can be
     lost from accounting (the ``--resume`` consolidation rebuilds ``skipped.csv`` from
     scenario dirs, and skips leave none behind), which would let an incomplete suite
-    masquerade as ~complete — the exact failure this fallback figure exists to expose
-    (audit F13-1 / D1-1). When the harness drops a plan manifest into the run dir, that
+    masquerade as ~complete — the exact failure this fallback figure exists to expose.
+    When the harness drops a plan manifest into the run dir, that
     becomes the denominator. Accepted forms, searched in the run dir, its nested
     per-invocation dirs, then the parent wrapper:
 
@@ -175,8 +175,8 @@ def _make_scenario_coverage(bundle: RunBundle, saver: T.Saver) -> None:
     recorded = executed + n_skip
 
     # The skip ledger is as-RECORDED, not as-planned: `recorded` is only a lower bound
-    # on the suite plan (skip rows can be lost from accounting, e.g. across --resume,
-    # audit F13-1/D1-1). With a plan manifest we can count the hole exactly; without
+    # on the suite plan (skip rows can be lost from accounting, e.g. across --resume).
+    # With a plan manifest we can count the hole exactly; without
     # one the figure must not claim plan coverage — only an upper bound.
     plan = _load_plan(bundle.run_dir)
     unaccounted = 0
@@ -277,8 +277,7 @@ def _make_scenario_coverage(bundle: RunBundle, saver: T.Saver) -> None:
         fig.tight_layout()
     # Measurement-quality caveat over rows that actually CARRY the saturation
     # determination — matrix-lat / hotreload / connrate rows never emit one, so using
-    # all executed rows as the denominator would silently count NA as not-limited
-    # (audit F13-2).
+    # all executed rows as the denominator would silently count NA as not-limited.
     hl_note = "No harness-limited determination recorded"
     if "harness_limited" in bundle.summary.columns:
         hl = bundle.summary["harness_limited"]

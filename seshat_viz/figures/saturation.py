@@ -414,7 +414,7 @@ def _finish(fig, bundle: RunBundle, saver: T.Saver, *, sat, scenarios, harness_l
     if n_limited:
         # The cost decomposition (routing − loopback, crypto − routing) is NOT claimed on
         # harness-limited data: those plateaus are lower bounds and the subtraction yields
-        # negative "costs" (audit F8-2).
+        # negative "costs".
         note += (
             f"{n_limited}/{len(scenarios)} sweeps flagged harness-limited by the harness itself "
             "(hollow markers) — their peaks/knees are lower bounds, not demonstrated gateway "

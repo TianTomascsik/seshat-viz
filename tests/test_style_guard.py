@@ -1,11 +1,11 @@
 """
-Style guard: the figure-rework invariants, enforced at the source level.
+Style guard: the theme invariants, enforced at the source level.
 
-The 2026-08 figure rework centralised every colour, fontsize, and legend decision in
-seshat_viz/theme.py (GREYS/SEM/CATEGORY/METRIC/FS + panel_title/annotate_value/legend_*).
-These tests keep the recipes from drifting back to module-local literals — the exact
-regression class the rework removed (10 unsanctioned hexes, 18 fontsize literals, 8
-harness-limited encodings, ACCENT-as-text).
+Every colour, fontsize, and legend decision lives in seshat_viz/theme.py
+(GREYS/SEM/CATEGORY/METRIC/FS + panel_title/annotate_value/legend_*). These tests fail
+the build if a figure module reintroduces a module-local literal — a local hex, a
+fontsize literal, an ad-hoc font family, a home-grown harness-limited encoding, or
+ACCENT used as a text colour.
 
 Sanctioned exceptions, encoded below rather than waived ad hoc:
 - "#FFFFFF"/"white" as a hollow-marker face or in-dark-bar text colour;

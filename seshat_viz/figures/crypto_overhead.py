@@ -68,10 +68,10 @@ def _takeaway_text(panels: list) -> str | None:
         (< 1/3 of the median — e.g. a datagram-rate-bound UDP path whose *routing baseline*
         is already below the plateau) is bound by its transport, not by AES; folding it in
         deflates the ceiling and contradicts the transport-independence claim inside its own
-        average (audit F3-2).
+        average.
     (b) The fast-vs-slow retained-% contrast is computed over the schemes the two transports
         SHARE. Averaging each side's own scheme mix lets DTLS-only rows inflate one side, and
-        the matched-scheme comparison can even reverse direction (audit F3-1).
+        the matched-scheme comparison can even reverse direction.
     """
     stats = []
     for tr, base, _base_lat, _base_hl, agg in panels:

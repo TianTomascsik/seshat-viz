@@ -1,7 +1,7 @@
 """
 Regression tests for F13 (suite coverage, scenario-coverage fallback mode).
 
-Guards the two audited defects:
+Guards two invariants of F13:
 
 * F13-1 — the denominator was silently `executed + skip-logged`, letting a run whose skip
   records were lost from accounting (e.g. across `--resume`) masquerade as ~complete. F13
@@ -14,7 +14,7 @@ Guards the two audited defects:
   over determination-carrying rows only, with the NA count disclosed.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f13.py`) so it needs no extra dev dependency.
+(`python tests/test_f13_coverage.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

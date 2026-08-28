@@ -1,7 +1,7 @@
 """
 Regression tests for F12 (system-metrics timeline, transports compared).
 
-Guards three audited defects:
+Guards three invariants of F12:
 
 * F12-1 — the comparable-panel picker admitted every scenario carrying a /proc timeseries,
   so its max-throughput preference crowned the SHM zero-copy slot-ring *microbenchmark*
@@ -16,7 +16,7 @@ Guards three audited defects:
   ~0.15 cores between reps). Every so-what number must come from the plotted trace.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f12.py`) so it needs no extra dev dependency.
+(`python tests/test_f12_timeline.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -116,9 +116,9 @@ def test_picker_rejects_variant_and_paced_rows():
 
 def test_steady_spans_split_on_the_inter_burst_gap():
     """The steady-window recovery still splits on the idle gap (the warm-up ramp and
-    teardown tail stay excluded). The per-panel so-what line and its _trace_floor/_sowhat
-    helpers were deliberately removed in the 2026-08 figure rework (D.3 complaint: red
-    italic in-axes prose) — interpretation lives in the caption/body text now."""
+    teardown tail stay excluded). The figure deliberately has no per-panel so-what line
+    (no _trace_floor/_sowhat helpers — red italic in-axes prose is banned);
+    interpretation lives in the caption/body text."""
     g = _trace("x", idle_gap=True)
     t = g["elapsed_ms"].values / 1000.0
     spans = timeline._steady_spans(t, g["cpu_pct"].values)

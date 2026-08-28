@@ -111,7 +111,7 @@ def perf_user_scope_only(d: pd.DataFrame) -> bool:
 
     Either fingerprint alone marks the counters untrustworthy for cross-rung comparison: a
     cycles/byte ladder built from them measures *where* the work runs (user vs kernel), not
-    what it costs (audit F9-2). Shared by F9 (withholds panels) and F30 (refuses the run).
+    what it costs. Shared by F9 (withholds panels) and F30 (refuses the run).
     """
     if "perf_cycles" not in d.columns:
         return False
@@ -208,7 +208,7 @@ def dead_repeat_scenarios(runs: pd.DataFrame) -> set:
     """
     Scenario names where at least one repetition recorded zero work (throughput 0 or no
     messages) — the SHM/UDS multi-connection stall pathology. Their summary means silently
-    average dead repeats with live ones (2026-07-07 audit D2-1: 457 rows), so comparison
+    average dead repeats with live ones, so comparison
     figures (F6 insertion cost, F7 tails) must exclude or disclose them. Apply to
     sustained-blast scenarios only: connrate/ping-pong reps legitimately report zero
     throughput.
@@ -314,7 +314,7 @@ def throughput_scenarios_only(d: pd.DataFrame) -> pd.DataFrame:
     (``pp_*``) runs, hot-reload rows (throughput measured *during* a config reload), paced
     ``lat_*``/``paced_*`` and saturation-sweep ``sat_*`` families, the SHM zero-copy
     microbenchmarks (``shmzc_*`` — a different measurement class than the gateway relay
-    blast, whose leak crowned F1's headline callouts; audit D1-5), and the
+    blast, and a headline hazard for F1 if leaked), and the
     ``_latency_``/``_pingpong_`` *workload* sub-mode of the iface and profile families
     (a rate cap, not capacity).
 
@@ -341,9 +341,9 @@ def throughput_scenarios_only(d: pd.DataFrame) -> pd.DataFrame:
         not_reload = ~name.str.contains("hotreload")
 
     paced = (
-        # paced_/shmzc_/handshake_ postdate the mode classifier's original vocabulary; the
-        # loader now classifies them (paced/pingpong/connrate) but the name guard stays so
-        # a summary loaded without _enrich_factors is still safe (audit D1-5/D2-2/D2-3).
+        # The loader classifies paced_/shmzc_/handshake_ (paced/pingpong/connrate),
+        # but the name guard stays so a summary loaded without _enrich_factors is
+        # still safe.
         name.str.startswith(("lat_", "sat_", "paced_", "shmzc_", "handshake_"))
         | name.str.contains(r"_(?:latency|pingpong)_\d+[KM]?B", regex=True)
     )
@@ -524,7 +524,7 @@ def rtt_inflation(summary: pd.DataFrame) -> pd.DataFrame:
     # cipher config is not this row's baseline) and to the 1-gateway 'direct' chain
     # (a 2-gateway blast p99 is not a baseline for a direct-chain RTT), and drop any
     # row that itself carries an RTT percentile (closed-loop rows mislabeled as blast).
-    # Each restriction applies only where the run offers it (audit F16-2).
+    # Each restriction applies only where the run offers it.
     if "family" in m.columns and (m["family"].astype(str) == "matrix").any():
         m = m[m["family"].astype(str) == "matrix"]
     if "chain" in m.columns and (m["chain"] == "direct").any():

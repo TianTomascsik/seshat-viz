@@ -8,17 +8,17 @@ better**. A line that stays high everywhere is a config with no weak axis; a lin
 on one axis exposes exactly where that configuration pays. This is the multi-objective view
 a single scatter or bar cannot give.
 
-Axes are **per-axis rank-normalized** (V5): min-max against UDP's outlier loss/latency
+Axes are **per-axis rank-normalized**: min-max against UDP's outlier loss/latency
 collapses every reliable transport into a thin band near the top, so ranking is used instead —
 it spreads the configs evenly on each axis and keeps their real trade-offs visible. An axis
 measured for fewer than half the configs is dropped (disclosed in the method note) rather than
 padded, and a config's missing value on a kept axis draws as a *gap*, never a fabricated
 mid-axis point. The "most balanced" takeaway is scored only over genuine gateway *crypto*
-configs (V2) with **every drawn axis measured**: routing-only rows — a single-protocol
+configs with **every drawn axis measured**: routing-only rows — a single-protocol
 transport that carries only a ``none`` row, or any ``none`` routing config — are excluded,
 since with no encrypted axis they look balanced for the wrong reason, and ``n_gateways==0``
 loopback-baseline rows never enter the canvas at all (they are not gateway configurations).
-SHM's latency/jitter axes carry ``theme.SHM_STALL_NOTE`` (V6): those points are a harness
+SHM's latency/jitter axes carry ``theme.SHM_STALL_NOTE``: those points are a harness
 receive-poll stall, not the SHM transport's capability.
 """
 
@@ -55,7 +55,7 @@ def _rank_norm(
     grp: pd.DataFrame, metrics: List[_Metric]
 ) -> Tuple[pd.DataFrame, List[_Metric], List[Tuple[str, int, int]]]:
     """
-    Rank-normalize each metric axis across the config table, "up = better" (V5).
+    Rank-normalize each metric axis across the config table, "up = better".
     Returns ``(norm, kept_metrics, low_coverage)``.
 
     Two gates run first. An axis whose values are (near-)constant across configs
@@ -63,12 +63,11 @@ def _rank_norm(
     transport when UDP is absent) — dropped. An axis measured for fewer than half the
     configs would put a placeholder on most polylines and decide the balance prize by
     who was *not* measured — dropped, and reported in ``low_coverage`` as
-    ``(label, measured, total)`` so the method note can disclose it (audit F21-2:
-    jitter covered 14/46 configs at the matched cell).
+    ``(label, measured, total)`` so the method note can disclose it.
 
     A missing value stays NaN: it renders as a gap in the polyline and never enters a
-    score. The former NaN→0.5 mid-axis fill, intended to be neutral, was not — under
-    min-score selection a guaranteed 0.5 floor on an unmeasured axis shields that config
+    score. A NaN→0.5 mid-axis fill may look neutral but is not — under min-score
+    selection a guaranteed 0.5 floor on an unmeasured axis would shield that config
     from ever ranking below the middle, while every measured competitor can.
     """
     kept: List[_Metric] = []
@@ -100,16 +99,15 @@ def _most_balanced(grp: pd.DataFrame, norm: pd.DataFrame) -> Optional[Dict[str, 
     from what is actually plotted rather than hard-coded. Returns ``None`` when no config
     may honestly wear the label, else ``{"idx", "ties", "score", "softened"}``.
 
-    V2: only a genuine gateway *crypto* config is a candidate. A routing-only row
+    Only a genuine gateway *crypto* config is a candidate. A routing-only row
     trivially lacks a crypto axis to trade off, so it looks balanced for the wrong
     reason — single-protocol transports (only a ``none`` row, no encrypted config to
     expose a crypto cost) and any ``none`` routing config are out. With no crypto config
     at all there is no winner: a routing row must never be captioned as one.
 
     Candidacy further requires every drawn axis measured: a min over fewer axes has fewer
-    chances to be low, so a config with a gap could win on coverage rather than balance
-    (audit F21-2 — the NaN→0.5 floor once crowned a config whose jitter was never
-    measured). Only if *no* eligible config is fully measured does the pick fall back to
+    chances to be low, so a config with a gap could win on coverage rather than balance.
+    Only if *no* eligible config is fully measured does the pick fall back to
     the min over measured axes, flagged ``softened`` so the takeaway claims "no measured
     axis" instead of overclaiming.
 
@@ -156,8 +154,8 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         return
 
     # n_gateways==0 loopback baselines are not gateway configurations at all — left in,
-    # they blend into the routing polylines' means and shift every config's rank slot
-    # (audit F21-3). They are excluded from the canvas, not merely from the prize.
+    # they blend into the routing polylines' means and shift every config's rank
+    # slot. They are excluded from the canvas, not merely from the prize.
     n_loopback = 0
     if "n_gateways" in d.columns:
         gw_rows = pd.to_numeric(d["n_gateways"], errors="coerce").fillna(1) != 0
@@ -238,7 +236,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     fig.legend(handles=thandles, title="transport", loc="outside right lower",
                fontsize=T.FS["small"], title_fontsize=T.FS["small"])
 
-    # Data-driven takeaway (V2 + measured-axes candidacy — see _most_balanced).
+    # Data-driven takeaway (crypto-only + measured-axes candidacy — see _most_balanced).
     take = "A line high on every axis has no weak point; a dip marks exactly where a configuration trades off."
     pick = _most_balanced(grp, norm)
     if pick is not None:
@@ -267,7 +265,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         note += f"; {gaps} config(s) miss an axis (line gap, not scored)"
     if "n_gateways" in d.columns:
         # The pinned cell controls connections and size but not chain length: disclose that
-        # a polyline's mean averages its 1-gw and 2-gw rows (audit F21-3).
+        # a polyline's mean averages its 1-gw and 2-gw rows.
         ngu = d.groupby(["transport", "protocol"], observed=True)["n_gateways"].nunique()
         gw_vals = sorted({int(v) for v in pd.to_numeric(d["n_gateways"], errors="coerce").dropna().unique()})
         blended = int((ngu > 1).sum())
@@ -280,7 +278,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
              "the measured routing order is TPROXY≈TCP>UDS>SHM (see F5).")
     metric_cols = {c for c, _, _ in metrics}
     if "shm" in set(grp["transport"].astype(str)) and (metric_cols & {"latency_p99_us_mean", "jitter_us_mean"}):
-        note += "  ·  " + T.SHM_STALL_NOTE  # V6: SHM's latency/jitter axes are a harness stall, not capability
+        note += "  ·  " + T.SHM_STALL_NOTE  # SHM's latency/jitter axes are a harness stall, not capability
     T.add_method_note(fig, note)
     T.add_provenance(fig, bundle.caption() + "  ·  axes rank-normalized per objective across shown configs; size-matched throughput runs")
     saver.save(fig, NAME, fig_id=FIG_ID, title=TITLE)

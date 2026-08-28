@@ -9,22 +9,23 @@ transports whose absolute latency differs by orders of magnitude (µs-scale plai
 ms-scale SHM harness stall). The tail is banded — ≤2× (tight) · 2–10× (moderate) · >10× (heavy) —
 so "how far past the median does the p99/p999 reach?" is legible at a glance.
 
-Fixes over the previous single-panel design:
-  * (V8) the old ``_pick_cell`` chose the (transport,size) with the *most protocols* — always TCP —
-    and silently discarded every non-TCP transport. We now FACET per transport so shm/unix/tcp/
-    tproxy(/udp) each get their own subplot at a matched size.
-  * (V11) the "best covered" cell was, by coincidence, the accidental 64 B corner (all fixed
-    per-syscall overhead). We pin a load-bearing MID/LARGE payload (prefer 4096 / 16384 B) and
-    surface the pinned size in the headline + method note.
-  * (V5) absolute-µs CCDFs mixed the SHM harness receive-poll stall (ms) with real service tails
-    (µs). We plot a p50-normalized CCDF (log-y) and annotate the latency bands instead.
-  * (F7-1) the chain topology is pinned figure-wide (prefer 2-gateway scg→scg) instead of a
-    per-protocol "prefer scg if any" that silently mixed a 1-gateway scg-direct curve into an
+Design decisions that keep the comparison honest:
+  * FACETED per transport (never a single "best covered" cell, which would always be TCP
+    and silently discard every non-TCP transport): shm/unix/tcp/tproxy(/udp) each get
+    their own subplot at a matched size.
+  * The pinned payload is a load-bearing MID/LARGE size (prefer 4096 / 16384 B) — a 64 B
+    corner would measure fixed per-syscall overhead — and the pinned size is surfaced in
+    the headline + method note.
+  * p50-normalized, not absolute µs: an absolute-µs CCDF would mix the SHM harness
+    receive-poll stall (ms) with real service tails (µs); the normalized plot compares
+    tail shape and annotates the latency bands instead.
+  * The chain topology is pinned figure-wide (prefer 2-gateway scg→scg) rather than a
+    per-protocol "prefer scg if any", which could mix a 1-gateway scg-direct curve into an
     otherwise all-scg facet; combos that exist only under another chain are dropped and disclosed.
-  * (F7-2) each curve is one scenario's **median-tail repetition**, not the mean of each
-    percentile across repetitions: mean-of-percentiles fabricates a curve no run produced when
-    reps are bimodal, and the takeaway number quoted that artifact.
-  * (F7-3) when the plaintext curves are harness-limited (sender-saturated) and the encrypted
+  * Each curve is one scenario's **median-tail repetition**, not the mean of each
+    percentile across repetitions: mean-of-percentiles fabricates a curve no run produced
+    when reps are bimodal, and the takeaway would quote that artifact.
+  * When the plaintext curves are harness-limited (sender-saturated) and the encrypted
     ones are not, the asymmetry is disclosed — it is precisely what makes plaintext's median
     µs-scale and its *relative* tail wide.
 
@@ -93,9 +94,9 @@ def _pin_chain(d: pd.DataFrame) -> tuple[pd.DataFrame, str | None]:
     Pin ONE chain topology for the whole facet grid.
 
     Every curve must share a topology: a 1-gateway scg-direct scenario mixed into a
-    2-gateway facet measures a different path (audit F7-1 — the per-protocol "prefer scg
-    if any" fallback silently drew the tproxy routing curve from the run's only tproxy
-    routing scenario, a chain=direct one, next to nine scg-scg curves). Prefer ``scg``
+    2-gateway facet measures a different path (a per-protocol "prefer scg if any"
+    fallback would silently draw a lone chain=direct routing curve next to an otherwise
+    all scg-scg facet). Prefer ``scg``
     (the gateway chain this figure is about); if the run has no scg rows at all, fall
     back to the most common chain so a direct-only run still renders — homogeneously.
     """
@@ -147,9 +148,9 @@ def _median_rep_tails(runs: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, tuple
 
     Mean-of-percentiles fabricates a curve when reps are bimodal: plaintext TCP reps at
     1.7×/18×/20× rendered as a ~14× curve that matches no observed run and became the
-    takeaway number (audit F7-2). The median rep is one actually-observed distribution
+    takeaway number. The median rep is one actually-observed distribution
     and is robust to a single outlier rep. Zero-work repetitions (no messages — the
-    dead-repeat stall pathology, audit D2-1) and reps without a positive finite p50 are
+    dead-repeat stall pathology) and reps without a positive finite p50 are
     excluded before selection.
 
     Returns ``(tail_table, spread)`` where ``spread`` maps scenario → (min, max) per-rep
@@ -240,7 +241,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         runs = runs[runs["family"].astype(str) == "matrix"]
 
     # Pin the chain topology figure-wide BEFORE picking the size, so coverage counts what
-    # will actually be plotted (audit F7-1).
+    # will actually be plotted.
     pinned, chain_pin = _pin_chain(runs)
 
     size = _pick_size(pinned)
@@ -326,7 +327,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     ]
 
     # Disclosure line: combos dropped by the chain pin, and any harness-limited asymmetry
-    # between the plaintext and encrypted curve pools (audit F7-1 / F7-3).
+    # between the plaintext and encrypted curve pools.
     disclosures: list[str] = []
     if dropped:
         shown = ", ".join(f"{transport_label(t)}/{protocol_label(p)}" for t, p in dropped[:4])
@@ -458,7 +459,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         none_best = tail_by_kind["none"]
         lo, hi = rep_spread.get(none_best["scenario"], (none_best["max"], none_best["max"]))
         # Quote the rep range when reps disagree — one number would hide the heterogeneity
-        # that made the old mean-of-percentiles value an artifact (audit F7-2).
+        # that makes a mean-of-percentiles value an artifact.
         rep_txt = f"; reps {lo:.1f}–{hi:.1f}×" if lo > 0 and hi / lo > 1.5 else ""
         lim_txt = ", harness-limited" if lim_map.get(none_best["scenario"], False) else ""
         T.add_takeaway(

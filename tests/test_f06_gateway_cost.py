@@ -13,7 +13,7 @@ Guards the pair-hygiene rules that keep the chart's sorted extremes honest:
 - groups with one topology entirely absent (TPROXY 2-gw) are disclosed, not silently dropped.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f6.py`) so it needs no extra dev dependency.
+(`python tests/test_f06_gateway_cost.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def _row(transport, protocol, size, conns, chain, gbps, *, hl=False, scenario=No
 
 
 def _summary() -> pd.DataFrame:
-    """Five groups, one per guarded pathology (values mimic the audited run's shapes)."""
+    """Five groups, one per guarded pathology (values mimic real-run shapes)."""
     rows = []
     # A: clean 3-pair sweep, ratios 0.9 / 1.0 / 1.3 → median pair is 4c, Δ = 0%.
     for conns, d, s in [(1, 10.0, 9.0), (4, 20.0, 20.0), (16, 30.0, 39.0)]:

@@ -266,8 +266,8 @@ def test_closed_loop_rtt_grid_when_matrix_lat_present():
                 grid_rows["rtt_us_p50"].append(20.0 + sz / 100.0)
                 grid_rows["rtt_us_p99"].append(25.0 + sz / 80.0)
                 # matched open-loop blast row (matrix family) for the inflation baseline —
-                # must be chain 'direct': the corrected baseline rightly rejects 2-gateway
-                # blast rows as a baseline for direct-chain RTT (audit F16-2).
+                # must be chain 'direct': the baseline rightly rejects 2-gateway
+                # blast rows as a baseline for direct-chain RTT.
                 grid_rows["scenario"].append(f"matrix_{pid}_{iface}_{unix}_{sz}B_direct")
                 grid_rows["transport"].append(iface); grid_rows["protocol"].append(proto)
                 grid_rows["message_bytes"].append(sz); grid_rows["connections"].append(1)

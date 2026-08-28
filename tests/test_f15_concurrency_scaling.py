@@ -1,7 +1,7 @@
 """
 Regression tests for F15 (concurrency scaling).
 
-Guards the two P0 conclusion defects plus the stale placeholder note:
+Guards two conclusion invariants plus the placeholder note:
 
 * F15-1 — the takeaway crowned the series with the SHALLOWEST sweep: `max` over per-series
   endpoint efficiencies mechanically hands the crown to a series whose high-concurrency
@@ -15,7 +15,7 @@ Guards the two P0 conclusion defects plus the stale placeholder note:
   sweeps connections in the same figure; the reason must be assembled per transport.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f15.py`) so it needs no extra dev dependency.
+(`python tests/test_f15_concurrency_scaling.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -67,7 +67,7 @@ def _row(transport: str, chain: str, conns: int, tput: float, *, busy: float,
 
 def _scaling_summary(*, busy_by_conns: dict[int, float], with_udp: bool = False) -> pd.DataFrame:
     """
-    The audit F15-1 shape, in miniature. Series A (TCP · routing, 2-gateway scg chain) sweeps
+    The crown-hazard shape, in miniature. Series A (TCP · routing, 2-gateway scg chain) sweeps
     1→64c: eff = 100/50/25/5 %. Series B (TPROXY · routing, single-gateway direct chain) is
     TRUNCATED at 16c with eff = 100/40/14 % — under the old max-over-endpoints rule B's 14%
     endpoint beat A's 5% endpoint, crowning the truncated, load-generator-bound series.

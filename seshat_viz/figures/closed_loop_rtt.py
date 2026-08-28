@@ -73,7 +73,7 @@ def _matched_blast_baseline(summary: pd.DataFrame) -> pd.Series:
 
     `derive.rtt_inflation`'s generic pool spans every sustained-blast family, which blends
     cipher-sweep rows (a different cipher), two-gateway `chain=='scg'` rows and the
-    iface/profile pools into the divisor (audit F16-2); restricting family+chain here keeps
+    iface/profile pools into the divisor; restricting family+chain here keeps
     the ratio a same-cell comparison. Rows carrying `rtt_us_p99` (closed-loop) are dropped
     as a guard even though the mode classifier already excludes them. Deliberately no
     cross-size or protocol-only fallback: a cell without an exactly-matched blast row gets
@@ -231,7 +231,7 @@ def _make_grid(grid: pd.DataFrame, bundle: RunBundle, saver: T.Saver) -> None:
         at = grid[(grid["message_bytes"] == rep_size) & grid["inflation"].notna()].copy()
         # One dumbbell per protocol, both endpoints from the SAME (protocol, interface) cell:
         # the cell with the largest matched ratio (a cross-interface min-RTT / max-blast pairing
-        # is not matched and overstates the ratio — audit F16-1). The chosen interface is named
+        # is not matched and overstates the ratio). The chosen interface is named
         # on the axis so the pairing is verifiable from the figure.
         idx = at.groupby("protocol", observed=True)["inflation"].idxmax()
         per = at.loc[idx, ["protocol", "transport", "rtt_p99", "blast_p99", "inflation"]].copy()
@@ -275,7 +275,7 @@ def _make_grid(grid: pd.DataFrame, bundle: RunBundle, saver: T.Saver) -> None:
             f"{n_if_lbl} interfaces × {len(sizes)} payload sizes — the coordinated-omission-safe absolute latency.")
     if worst is not None and np.isfinite(worst.get("inflation", np.nan)):
         # Name the grid-wide worst cell: it is usually NOT in the fixed-size bottom panel, so a
-        # bare "(bottom)" pointer would cite a panel showing a smaller maximum (audit F16-3).
+        # bare "(bottom)" pointer would cite a panel showing a smaller maximum.
         take += (f" Open-loop blast inflates the matched p99 by up to "
                  f"≥{worst['inflation']:.0f}× ({protocol_label(str(worst['protocol']))} · "
                  f"{T.fmt_bytes(worst['message_bytes'])}B over "
@@ -381,7 +381,7 @@ def _make_dumbbell(tbl: pd.DataFrame, bundle: RunBundle, saver: T.Saver) -> None
         axb = axes[0][1]
         # One row per protocol, both endpoints from the SAME scenario row (the one with the
         # largest matched ratio): min-RTT/max-blast aggregation across rows would pair
-        # endpoints from different scenarios and overstate the ratio (audit F16-1).
+        # endpoints from different scenarios and overstate the ratio.
         d = tbl.dropna(subset=["blast_p99", "rtt_p99"]).copy()
         d = d[d["rtt_p99"] > 0]
         d["__infl"] = d["blast_p99"] / d["rtt_p99"]

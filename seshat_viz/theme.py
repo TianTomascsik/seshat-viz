@@ -251,8 +251,8 @@ def _record_chrome(fig: "plt.Figure", kind: str, text: str) -> None:
 
     Recorded UNCONDITIONALLY (chrome on or off) so every render — including the default
     chrome-on one — leaves a machine-readable captions.txt/manifest trail. Without this,
-    nothing on disk records which run produced a PNG, which is how the 2026-07-07 audit
-    found two thesis figures silently rendered from the wrong run (audit finding D4-4).
+    nothing on disk records which run produced a PNG, and a figure silently rendered
+    from the wrong run is indistinguishable from a fresh one.
     """
     records = getattr(fig, "_seshat_chrome", None)
     if records is None:

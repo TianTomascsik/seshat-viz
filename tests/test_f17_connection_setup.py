@@ -1,5 +1,5 @@
 """
-Regression tests for F17 (connection setup) — audit findings F17-1 and F17-2.
+Regression tests for F17 (connection setup).
 
 F17-1: the handshake-auth sweep (handshake_*) varies cert_key_type / kex_group, but those
 factors never reach summary.csv and conn_threads is name-regex-derived (NaN for handshake_*
@@ -13,7 +13,7 @@ F17-2: resumed_fraction=0 is a harness measurement limit (the plaintext connrate
 presents a session ticket), not an SCG defect — the takeaway must not blame the gateway.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f17.py`) so it needs no extra dev dependency.
+(`python tests/test_f17_connection_setup.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

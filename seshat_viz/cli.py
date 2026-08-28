@@ -35,10 +35,11 @@ def _parse_only(value: Optional[str]) -> Optional[set[str]]:
 def _write_captions(saver: Saver) -> Path:
     """
     Persist each figure's chrome text (headline, method note, provenance, takeaway) to
-    <out>/captions.txt, one block per figure. Written on EVERY render — chrome-on renders
-    used to leave no machine-readable record of which run produced the PNGs, which let two
-    thesis figures be silently overwritten from the wrong run (2026-07-07 audit, D4-4).
-    Under --no-chrome the same text doubles as the LaTeX caption source.
+    <out>/captions.txt, one block per figure. Written on EVERY render so there is always
+    a machine-readable record of which run produced which figure — a chrome-on render
+    otherwise leaves no on-disk provenance, and a stale or wrong-run figure would be
+    indistinguishable from a fresh one. Under --no-chrome the same text doubles as the
+    LaTeX caption source.
     """
     path = saver.out_dir / "captions.txt"
     order = ("headline", "takeaway", "method", "provenance")
@@ -89,7 +90,7 @@ def _write_manifest(saver: Saver, bundle) -> Path:
     Persist a machine-readable provenance manifest to <out>/manifest.json: the run
     directory and label every figure in this render came from, plus per-figure status.
     A partial re-render (--only) against a different run then leaves an inspectable
-    trail instead of silently mixing runs in one figures/ directory (audit D4-4).
+    trail instead of silently mixing runs in one figures/ directory.
     """
     import datetime as _dt
     import json as _json

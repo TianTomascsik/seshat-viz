@@ -114,7 +114,7 @@ def main() -> int:
         if name.startswith("test_") and callable(fn):
             fn()
             print(f"  ok  {name}")
-    print("test_fix_f27: all tests passed")
+    print("test_f27_wire_qos: all tests passed")
     return 0
 
 

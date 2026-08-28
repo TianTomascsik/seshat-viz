@@ -12,13 +12,13 @@ measurement pathology, not topology cost:
 
 - Scenarios with a zero-work repetition are excluded before pairing: their summary means
   average dead SHM/UDS multi-connection repetitions with live ones, and whether the dead
-  level lands on the 1-gw or 2-gw side is arbitrary (audit F6-1/D2-1).
+  level lands on the 1-gw or 2-gw side is arbitrary.
 - A matched pair with a load-generator-bound side carries no cost information — the ratio
   of two harness floors is noise — so such pairs never enter Δ. Rows where EVERY matched
-  pair is bound are drawn grey with no Δ claim (audit F6-3, F15's bottleneck convention).
+  pair is bound are drawn grey with no Δ claim (F15's bottleneck convention).
 - Δ and the drawn dumbbell are the SAME experimental pair: the matched connection count
   whose 2gw/1gw ratio is the median of the harness-clean sweep, so the number printed is
-  always the delta of the dots next to it (audit F6-2). If the sweep's ratios spread
+  always the delta of the dots next to it. If the sweep's ratios spread
   beyond ``_SPREAD_MAX``, no single summary is defensible; the lowest-concurrency pair
   (least exposed to multi-connection pathology) is shown and flagged '†'.
 """

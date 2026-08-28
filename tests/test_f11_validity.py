@@ -7,15 +7,15 @@ Guards the honesty of the figure's data pool and disclosures:
     headroom pool and counted in the headline, not binned as a "< 1× probe under-read":
     a headroom of exactly 0 is unplottable on the log ECDF (matplotlib drops x=0 while
     the axis lower bound collapses to 1e-3, stretching empty decades) and renders as a
-    zero-length bar in the worst slice (audit F11-1).
+    zero-length bar in the worst slice.
   * Rows that never received a ceiling probe (headroom absent) must be disclosed — the
     "run-wide" claim otherwise silently means "the probed subset" while the unprobed
-    throughput/paced rows feed other thesis figures (audit F11-2).
+    throughput/paced rows feed other figures (F1-F22).
   * The sub-1× mechanism note must cover encrypted paths, not routing only — a third of
-    the sub-1× band in the canonical run is TLS/kTLS at 64B (audit F11-3).
+    the sub-1× band in a full run is TLS/kTLS at 64B.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f11.py`) so it needs no extra dev dependency.
+(`python tests/test_f11_validity.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

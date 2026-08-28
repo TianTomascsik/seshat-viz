@@ -1,7 +1,7 @@
 """
 Regression tests for F7 (latency tail shape, p50-normalized CCDF facets).
 
-Guards the two P1 defects from the 2026-07-07 audit:
+Guards the invariants of F7:
   * F7-1 — the per-protocol scenario picker preferred chain=='scg' only "if any", so a
     protocol with no scg scenario silently fell back to a chain=direct (1-gateway) run
     inside an otherwise all-scg (2-gateway) facet. The chain is now pinned figure-wide;
@@ -14,7 +14,7 @@ And the P2 disclosure F7-3: when the plaintext curves are harness-limited while 
 encrypted ones are not, the asymmetry must appear in the figure's method notes.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f7.py`) so it needs no extra dev dependency.
+(`python tests/test_f07_latency_tails.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def _rep_row(scenario: str, transport: str, protocol: str, chain: str, run: int,
 
 
 def _runs_frame() -> pd.DataFrame:
-    """The audit shape in miniature: tcp has scg scenarios for routing (bimodal reps:
+    """The guarded shape in miniature: tcp has scg scenarios for routing (bimodal reps:
     1.7×/18×/20×) and tls/1.3 (homogeneous ~1.2×); tproxy has an scg tls/1.3 scenario but
     routing exists ONLY as a chain=direct run (the F7-1 fallback trap)."""
     rows = []

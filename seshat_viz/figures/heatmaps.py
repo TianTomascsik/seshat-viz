@@ -22,9 +22,9 @@ scg-preference dedup are daggered (†) so no panel silently mixes topologies; j
 scoped to the transports that actually carry PDV data; and the RTT column's chain (typically
 scg-direct, i.e. single-gateway) is disclosed next to the scg-preferred throughput column.
 
-Thesis-review refinements retained: (V5) a takeaway + method note make explicit that ROUTING scales
+Two further design notes: a takeaway + method note make explicit that ROUTING scales
 with payload size while the encrypted rows stay near-flat, a fact the per-panel LogNorm color-
-compresses so it is only legible in the annotated cell values; (V6) the SHM blast-p99 panel is
+compresses so it is only legible in the annotated cell values; and the SHM blast-p99 panel is
 flagged and the figure carries ``theme.SHM_STALL_NOTE`` because its multi-ms cells are a harness
 receive-poll stall, not SHM transport latency (throughput is unaffected).
 """
@@ -391,7 +391,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                 )
             lat_title = f"{transport_label(transport)} — latency (µs) · {lat_kind}"
             if transport == "shm" and not closed:
-                # V6: SHM's multi-ms BLAST p99 cells are a harness receive-poll stall, not SHM
+                # SHM's multi-ms BLAST p99 cells are a harness receive-poll stall, not SHM
                 # latency; flag them (closed-loop RTT does not have this artifact).
                 lat_title += " · ms cells = harness stall, not SHM"
             T.panel_title(axes[r][1], lat_title)
@@ -425,7 +425,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
             axes[r][col_j].set_ylabel("")
 
     T.set_headline(fig, f"{TITLE}  ·  {bundle.label}", y=1.01)
-    # V5: each panel's LogNorm compresses the row's own spread, so the fact that ROUTING
+    # Each panel's LogNorm compresses the row's own spread, so the fact that ROUTING
     # (protocol=none) scales strongly with payload size while the crypto rows stay near-flat is only
     # visible in the printed cell values — state it outright, with the factors recomputed from the
     # rendered pivots (never hardcoded), rather than leaving it to the color.
@@ -444,7 +444,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     T.add_takeaway(fig, take)
     # Method note: each heatmap is LogNorm'd on its own value range, so color is a within-panel
     # comparison only — the routing row's size-scaling must be read from the annotated values.
-    # Append the SHM harness-stall caveat (V6) whenever an SHM latency panel is actually drawn.
+    # Append the SHM harness-stall caveat whenever an SHM latency panel is actually drawn.
     note_parts = []
     if have_rtt:
         rtt_note = (

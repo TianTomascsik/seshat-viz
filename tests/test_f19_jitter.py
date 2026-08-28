@@ -1,7 +1,7 @@
 """
 Regression tests for F19 (jitter & determinism).
 
-Guards the two audited comparison defects:
+Guards two comparison invariants of F19:
 
   * F19-1 — the matched cell was voted on the full measurement pool, not the jitter-BEARING
     rows: it pinned a payload size where whole transports carry NaN jitter for every
@@ -15,7 +15,7 @@ Plus the F19-3 disclosures: no hardcoded "datagram points are DTLS at datagram s
 clause, a computed jitter-coverage note, and a computed harness-limited note.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f19.py`) so it needs no extra dev dependency.
+(`python tests/test_f19_jitter.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def _row(scenario, transport, protocol, size, *, n_gw=1, jit=np.nan, tput=10.0, 
     }
 
 
-def _audit_shape_summary() -> pd.DataFrame:
+def _guarded_shape_summary() -> pd.DataFrame:
     """The nightly's shape in miniature: at 256B only TPROXY carries encrypted jitter (and
     a 0-gw UDP loopback baseline is the only jitter-bearing 'UDP · routing' row), while at
     16KB tcp/tproxy/unix routing AND tcp/tproxy crypto all carry jitter. The pre-fix vote
@@ -98,7 +98,7 @@ def _chrome(saver: theme.Saver, kind: str) -> str:
 def test_pool_excludes_zero_gateway_rows():
     """F19-2: a 0-gw loopback baseline must never enter the per-configuration pool —
     with `n_gateways` present, and via the naming fallback when it is absent."""
-    s = _audit_shape_summary()
+    s = _guarded_shape_summary()
     pool = jitter._gateway_blast_pool(s)
     assert not (pool["n_gateways"] == 0).any()
     assert "baseline_udp_loopback_256B" not in set(pool["scenario"])
@@ -111,7 +111,7 @@ def test_size_vote_runs_on_jitter_bearing_rows():
     """F19-1: measured coverage favors 256B (7 gateway combos vs 6) but jitter coverage
     favors 16KB (5 combos vs 1) — the cell must pin 16KB, and the plotted set must span
     crypto on more than one transport (the 256B cell's crypto story was TPROXY-only)."""
-    df, chosen, _cell = jitter._matched_jitter(_audit_shape_summary())
+    df, chosen, _cell = jitter._matched_jitter(_guarded_shape_summary())
     assert chosen["message_bytes"] == 16384
     assert chosen["connections"] == 1
     enc_transports = set(df[df["protocol"] != "none"]["transport"].astype(str))
@@ -136,7 +136,7 @@ def test_render_notes_and_takeaway_are_computed():
     """End-to-end: the figure renders, the false DTLS-sizes clause is gone, coverage and
     harness-limited notes carry computed counts, and the takeaway states the computed
     encryption multiplier (6.5x here) instead of the hardcoded 'adds little'."""
-    bundle = _bundle(_audit_shape_summary())
+    bundle = _bundle(_guarded_shape_summary())
     with tempfile.TemporaryDirectory() as tmp:
         saver = theme.Saver(Path(tmp))
         jitter.make(bundle, saver)

@@ -105,7 +105,7 @@ def _load_disclosure(summ: pd.DataFrame, scenarios: list) -> str:
     """
     Method-note clause disclosing the panels' *achieved* operating points: pinning the
     configured workload does not pin the achieved one, and rows flagged harness-limited hit
-    the load generator's ceiling, not the gateway's (audit F12-2). Everything here is
+    the load generator's ceiling, not the gateway's. Everything here is
     computed from the summary rows actually plotted; empty when the columns are absent.
     """
     if summ is None or summ.empty or "scenario" not in summ.columns:
@@ -168,7 +168,7 @@ def _pin_and_pick(
     # Paced/rate-capped runs, connection-rate sweeps and the SHM zero-copy slot-ring
     # microbenchmarks (non-default data path AND a 0s-cooldown schedule) carry /proc
     # timeseries too, and the max-throughput preference below would happily crown one of
-    # them over the like-for-like default-path row (audit F12-1). They are a different
+    # them over the like-for-like default-path row. They are a different
     # measurement class, so they are not eligible panel candidates.
     d = derive.throughput_scenarios_only(d)
     chosen: dict = {}
@@ -339,7 +339,7 @@ def _render(
         # Achieved load + bottleneck ownership per panel: the pinned cell fixes the
         # *configured* workload, not the throughput the harness actually reached, so
         # cross-panel CPU readings must be interpretable at each panel's own operating
-        # point (audit F12-2).
+        # point.
         title_extras = [gw_txt, pid_txt]
         try:
             tput = float(_fact("throughput_gbps_mean"))

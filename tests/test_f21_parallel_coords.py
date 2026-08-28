@@ -1,7 +1,7 @@
 """
 Regression tests for F21 (parallel-coordinates trade-off map).
 
-Guards the two audited failure modes of the "most balanced" takeaway and the drawn pool:
+Guards two failure modes of the "most balanced" takeaway and the drawn pool:
 
 * F21-2 — the NaN→0.5 mid-axis fill let a config whose metric was never measured carry a
   guaranteed 0.5 floor into the min-score, crowning an unmeasured config ("no axis below
@@ -13,7 +13,7 @@ Guards the two audited failure modes of the "most balanced" takeaway and the dra
   and shifted every config's rank slot. Now they never enter the canvas.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f21.py`) so it needs no extra dev dependency.
+(`python tests/test_f21_parallel_coords.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

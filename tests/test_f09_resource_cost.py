@@ -1,7 +1,7 @@
 """
 Regression tests for F9 (resource cost of security).
 
-Guards the user-scope-demoted perf-counter defect (audit F9-2/F9-3): an unprivileged
+Guards the user-scope-demoted perf-counter invariant: an unprivileged
 perf run (perf_event_paranoid >= 2) silently demotes every event to ':u', so the
 cycles/byte ladder compares *where* work runs (user vs kernel) instead of what it costs
 — kernel-offload rungs read near-zero while userspace crypto reads full cost — and
@@ -11,7 +11,7 @@ note must describe the actual panel state (placeholder wording only when panels 
 fell back, never a hardcoded "shown as placeholders" over populated panels).
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f9.py`) so it needs no extra dev dependency.
+(`python tests/test_f09_resource_cost.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ def test_detector_ignores_missing_counters():
 # -- end-to-end panel + method-note behavior -------------------------------------------
 
 def test_user_scope_run_withholds_cycles_and_ctxsw_panels():
-    """The audit's 110x-artifact scenario: cycles/byte and ctx-switches must NOT render
+    """The 110x-artifact scenario: cycles/byte and ctx-switches must NOT render
     as bar measurements; the method note must disclose the scope instead of claiming
     the panels are procfs placeholders."""
     saver, withheld = _render(perf="demoted")

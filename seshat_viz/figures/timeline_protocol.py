@@ -59,7 +59,7 @@ _LADDER = [
 
 # Five panels: the plaintext baseline plus BOTH userspace/kernel TLS pairs (1.2 and 1.3) —
 # the full offload story. A cap of 4 used to cut the ladder mid-pair, leaving TLS 1.3
-# without its kTLS partner and inviting a read against kTLS 1.2 instead (audit F22-3);
+# without its kTLS partner and inviting a read against kTLS 1.2 instead;
 # :func:`_trim_to_pairs` additionally guarantees no cap ever splits a pair.
 _MAX_SCEN = 5
 
@@ -73,11 +73,11 @@ def _best_slice(summ: pd.DataFrame, have_sys: set) -> dict | None:
     Counting per (family, chain) rather than per transport alone matters: a transport's raw
     protocol count can span measurement families with different client APIs and phase
     schedules (e.g. an ``iface_*`` plaintext row vs the ``matrix_*`` crypto rows), and a
-    cross-family "baseline" panel is not the crypto panels' workload minus crypto (audit
-    F22-1). Eligibility mirrors ``_pin_and_pick`` (sustained-blast default-path rows only),
+    cross-family "baseline" panel is not the crypto panels' workload minus crypto.
+    Eligibility mirrors ``_pin_and_pick`` (sustained-blast default-path rows only),
     so the count reflects what can actually render. Ties are broken toward TCP — it runs
     every protocol, and its CPU trace has no busy-poll floor to flatten the crypto deltas
-    (audit F22-2: shm/unix/tcp/tproxy all tie on full runs, and groupby order alone used to
+    (shm/unix/tcp/tproxy all tie on full runs, so groupby order alone would
     crown SHM) — then by ``TRANSPORT_ORDER``, then lexically, so the pick is deterministic.
     """
     if summ is None or summ.empty or not {"scenario", "transport", "protocol"}.issubset(summ.columns):
@@ -116,7 +116,7 @@ def _trim_to_pairs(scenarios: list, proto_of: dict, max_scen: int) -> list:
     Truncate the ladder-ordered panel list to ``max_scen`` without splitting a
     userspace/kernel pair: when the cut would keep a ``tls/X`` panel whose ``ktls/X``
     partner exists further down the ladder but no longer fits, drop the partnerless panel
-    too (audit F22-3). Never trims below two panels — a single panel is no comparison.
+    too. Never trims below two panels — a single panel is no comparison.
     """
     kept = scenarios[:max_scen]
     cut = scenarios[max_scen:]

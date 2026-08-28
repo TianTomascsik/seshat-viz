@@ -73,7 +73,7 @@ def _facet(hs: pd.DataFrame) -> tuple[pd.Series, str | None]:
     one — the count of closed-loop clients; `conn_threads` exists in the schema but is unset on
     handshake_* rows. Cells must be keyed on whichever is actually populated, never on CSV row
     order: an unkeyed pick silently swaps 1-client rows into the wider-count bars whenever the
-    summary is reordered (audit F23-1).
+    summary is reordered.
     """
     for col, word in (("connections", "client"), ("conn_threads", "thread")):
         if col in hs.columns:
@@ -85,7 +85,7 @@ def _facet(hs: pd.DataFrame) -> tuple[pd.Series, str | None]:
 
 def _cell(sub: pd.DataFrame, label: str, fv) -> pd.Series | None:
     """The unique row for (algorithm label, facet value); None when absent. More than one match
-    means an unkeyed dimension — refuse rather than let frame order pick a row (audit F23-1)."""
+    means an unkeyed dimension — refuse rather than let frame order pick a row."""
     m = sub["label"] == label
     if not _isnan(fv):
         m = m & (sub["facet"] == fv)
@@ -98,7 +98,7 @@ def _cell(sub: pd.DataFrame, label: str, fv) -> pd.Series | None:
 
 def _latency_scale(vals: list[float]) -> str:
     """Log only pays over a wide span; on the narrow ranges these sweeps produce, matplotlib
-    emits dense overlapping minor labels (audit F23-3) and linear resolves the same dumbbells."""
+    emits dense overlapping minor labels, and linear resolves the same dumbbells."""
     finite = [v for v in vals if np.isfinite(v) and v > 0]
     if len(finite) >= 2 and max(finite) / min(finite) > 8.0:
         return "log"
@@ -297,7 +297,8 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     method = (
         "connrate churn through the gateway; each row varies ONE primitive — top: server-cert "
         "signature (RSA vs ECDSA); bottom: ECDHE group (X25519 vs P-256), pinned via the "
-        "allowlist-validated `groups` (TRA #84). Closed-loop clients reconnect back-to-back: "
+        "allowlist-validated `groups` parameter (only named groups are accepted). "
+        "Closed-loop clients reconnect back-to-back: "
         "conns/sec ≈ clients ÷ handshake latency, a churn rate at the plotted client count — "
         "not gateway capacity."
     )

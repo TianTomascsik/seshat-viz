@@ -1,7 +1,7 @@
 """
 Regression tests for F22 (protocol timeline: pin transport, vary protection mode).
 
-Guards the audited selection defects:
+Guards the selection invariants of F22:
 
   * F22-1 (P0) — the plaintext-baseline panel must be the crypto panels' like-for-like
     sibling (same scenario family + chain), not a faster cross-family row that happens to
@@ -15,7 +15,7 @@ Guards the audited selection defects:
     tls/X panel invites reading its delta against the wrong kTLS version.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f22.py`) so it needs no extra dev dependency.
+(`python tests/test_f22_timeline_protocol.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

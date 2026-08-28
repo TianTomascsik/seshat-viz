@@ -1,6 +1,6 @@
-"""Provenance manifest (audit D4-4): every render records which run produced which figure,
-and mixed-run figure directories are flagged incoherent — the failure mode that let two
-thesis figures be silently overwritten from the wrong run on 2026-07-07."""
+"""Provenance manifest: every render records which run produced which figure, and
+mixed-run figure directories are flagged incoherent — otherwise a figure silently
+overwritten from the wrong run would be indistinguishable from a fresh one."""
 
 from __future__ import annotations
 

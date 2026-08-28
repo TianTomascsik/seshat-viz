@@ -25,7 +25,7 @@ TITLE = "Connection establishment rate & handshake latency"
 # — cert_key_type / kex_group exist only in the scenario config — so the varied factor must
 # be recovered from the scenario name. Without it, every sweep row collapses to a bare
 # "TLS 1.3" label and RSA's genuine ~1.5× handshake cost reads as unexplained variance
-# within a single config (audit F17-1). Prefix-keyed, longest first (rsa before kex).
+# within a single config. Prefix-keyed, longest first (rsa before kex).
 _HS_VARIANTS = (
     ("handshake_tls13_rsa", "RSA cert"),
     ("handshake_tls13_ecdsa", "ECDSA cert"),
@@ -81,7 +81,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     tbl = tbl.sort_values(["__o", "conn_threads", "scenario"]).reset_index(drop=True)
     tbl["label"] = tbl.apply(_label, axis=1)
 
-    # V9: detect resume-intent rows whose telemetry shows resumption never engaged, so the
+    # Detect resume-intent rows whose telemetry shows resumption never engaged, so the
     # "resumed" run measured a FULL handshake, not a cheap resume. Root cause (located after
     # the campaign): the gateway's encrypt connector cached upstream session tickets but never
     # presented one on reconnect — a gateway defect, since fixed and regression-tested. Gate on

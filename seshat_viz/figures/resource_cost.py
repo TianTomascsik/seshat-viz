@@ -42,7 +42,7 @@ _KIB_PER_MIB = 1024.0
 _SCOPE_BLIND = {"cycles_per_byte", "ctxsw_per_kmsg"}
 
 
-# Lifted to derive.perf_user_scope_only (2026-08: F30 shares it); the module-local name is
+# Lives in derive.perf_user_scope_only (F30 shares it); the module-local name is
 # kept so this figure's call sites and tests read unchanged.
 _perf_user_scope_only = derive.perf_user_scope_only
 
@@ -120,7 +120,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     perf_missing = [(c, t) for c, t, _ in scalar_panels
                     if c in _PERF_METRICS and (c not in d.columns or not d[c].notna().any())]
     # Populated counters from an unprivileged perf run are user-scope only: the scope-blind
-    # panels get withheld with the reason instead of rendered as measurements (audit F9-2).
+    # panels get withheld with the reason instead of rendered as measurements.
     user_scope = _perf_user_scope_only(d)
     scope_withheld = [(c, t) for c, t, _ in present if user_scope and c in _SCOPE_BLIND]
     if scope_withheld:
@@ -311,8 +311,8 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         take = "Up the security ladder, " + mem_clause + "."
 
     # Method note & provenance describe the *actual* state of the hardware-counter panels
-    # rather than a hardcoded "placeholders" claim, which contradicted a populated render
-    # (audit F9-3): placeholder wording only when panels really fell back, scope caveat only
+    # rather than a hardcoded "placeholders" claim that a populated render would
+    # contradict: placeholder wording only when panels really fell back, scope caveat only
     # when the counters were user-scope-demoted, a plain perf-stat attribution otherwise.
     _SHORT = {"cycles_per_byte": "cycles/byte", "cache_miss_rate": "cache-miss",
               "ctxsw_per_kmsg": "ctx-switches"}

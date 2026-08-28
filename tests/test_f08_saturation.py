@@ -1,7 +1,7 @@
 """
 Regression tests for F8 (saturation knee).
 
-Guards the audited takeaway/disclosure defects:
+Guards the takeaway/disclosure invariants of F8:
   * F8-1 (P0): the takeaway pooled max() over ALL loss-shedding sweeps but attributed the
     result to "only the DTLS/UDP path" — a chimera (routing-UDP's knee + DTLS's loss on one
     path). Each shedding path must be named with ITS OWN knee and peak loss.
@@ -14,7 +14,7 @@ Guards the audited takeaway/disclosure defects:
     columns TCP/UDP), not in loader order.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f8.py`) so it needs no extra dev dependency.
+(`python tests/test_f08_saturation.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

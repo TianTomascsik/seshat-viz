@@ -71,7 +71,7 @@ REGISTRY = [
     wire_ktls_ab,         # F28  (kTLS vs user-space TLS on a physical NIC)
     # resource cost
     resource_cost,        # F9 (consolidates old F9/F10/F14)
-    relay_backend,        # F29  (relay-backend A/B: splice vs io_uring, ex-raster 8.12)
+    relay_backend,        # F29  (relay-backend A/B: splice vs io_uring)
     hw_counters,          # F30  (kernel-scope perf: relay copy cost + protection ladder)
     cipher_cost,          # F20  (symmetric AEAD cost)
     handshake_cost,       # F23  (asymmetric handshake / cert-sig cost)

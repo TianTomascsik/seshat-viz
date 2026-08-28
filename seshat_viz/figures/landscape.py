@@ -29,7 +29,7 @@ def _callout_pool(d: pd.DataFrame) -> pd.DataFrame:
     Rows eligible to headline the extreme callouts: trusted (`_hstate == "trusted"`) AND
     with an SCG actually in the path (n_gateways >= 1). A harness-limited point is a
     load-generator floor and a zero-gateway loopback row is not a gateway config, so
-    neither may headline "best" — loopback baselines plot but never crown (audit F1-3).
+    neither may headline "best" — loopback baselines plot but never crown.
     Degrades gracefully: trusted-any if no trusted gateway row exists (e.g. a
     loopback-only baseline run), then the full slice if nothing at all is trusted.
     """

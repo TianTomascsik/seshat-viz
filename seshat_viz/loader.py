@@ -239,8 +239,8 @@ def _scenario_family(name: str) -> str:
     for prefix in (
         "matrix", "iface", "hotreload", "cipher", "profile",
         # paced_* (rate-capped encrypted datagram runs), shmzc_* (SHM zero-copy
-        # microbenchmarks) and handshake_* (cert/kex connection-rate sweeps) landed in
-        # 'other' before 2026-07-07, which let them leak into blast pools (audit D1-5).
+        # microbenchmarks) and handshake_* (cert/kex connection-rate sweeps) are
+        # classified explicitly so they cannot leak into sustained-blast pools.
         "paced", "shmzc", "handshake",
         "conn", "pp", "sat", "lat", "baseline", "scg", "direct",
     ):
@@ -329,13 +329,13 @@ def _enrich_factors(df: pd.DataFrame) -> pd.DataFrame:
     def _mode(n: str):
         # Closed-loop ping-pong (honest RTT) and connection-rate runs are not throughput.
         # shmzc_*_rtt_* are closed-loop RTT probes of the zero-copy path (their
-        # latency_p99 IS an rtt percentile — audit D2-3/F16-2).
+        # latency_p99 IS an rtt percentile).
         if n.startswith("pp_") or "pingpong" in n or n.startswith("matrix_lat_"):
             return "pingpong"
         if n.startswith("shmzc_") and "_rtt" in n:
             return "pingpong"
         # handshake_* (cert/kex sweeps) are connection-rate benchmarks exactly like
-        # conn_* — conns_per_sec populated, throughput 0.0 (audit D2-2).
+        # conn_* — conns_per_sec populated, throughput 0.0.
         if n.startswith(("conn", "handshake_")):
             return "connrate"
         # Paced / saturation-sweep families and the `_latency_`/`_pingpong_` *workload*
@@ -343,7 +343,7 @@ def _enrich_factors(df: pd.DataFrame) -> pd.DataFrame:
         # throughput is not capacity. The workload token sits immediately before the size
         # token — `_latency_<size>` is the paced workload, while `_latency_<word>` is a
         # tuning label that must stay classified 'throughput'. paced_* is the encrypted
-        # datagram sub-suite paced below the loss knee (audit D1-5).
+        # datagram sub-suite paced below the loss knee.
         if n.startswith(("lat_", "paced_")):
             return "paced"
         if n.startswith("sat_"):
@@ -436,9 +436,9 @@ def _enrich_factors(df: pd.DataFrame) -> pd.DataFrame:
 
 _TS_RE = re.compile(r"^\d{8}-\d{6}$")
 # Top-level run dirs may carry a suffix naming the invocation (`-procfs`, `-perf`,
-# `-rerun`, …). The old pure-timestamp `_TS_RE` made them invisible to auto-pick, so
-# pointing the CLI at `results/` silently resolved to an OLD unsuffixed run while the
-# newest data sat in a suffixed wrapper (audit D4-1). Nested per-invocation dirs stay
+# `-rerun`, …). A pure-timestamp pattern would make them invisible to auto-pick, so
+# pointing the CLI at `results/` could silently resolve to an old unsuffixed run while
+# the newest data sits in a suffixed wrapper. Nested per-invocation dirs stay
 # pure timestamps, so `_TS_RE` remains correct for nested discovery.
 _TOP_RUN_RE = re.compile(r"^\d{8}-\d{6}(?:[-_][A-Za-z0-9_-]+)?$")
 

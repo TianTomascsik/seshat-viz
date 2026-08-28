@@ -53,10 +53,10 @@ def _rtt_pools(df):
 
     Only mode=='pingpong' rows are honest service latency — paced iface_*/lat_* rows also
     carry rtt percentiles but measure a rate-capped open-loop stream, and blending them
-    bent the routing curves (audit F2-1). Loopback (n_gateways==0) ping-pong probes carry
+    would bend the routing curves. Loopback (n_gateways==0) ping-pong probes carry
     no gateway hop, so they are returned separately: their scenario names carry the same
     `_direct`/loopback chain token as the 1-gateway path, and chain-keyed styling would
-    present a no-gateway baseline as the fastest gateway interface (audit F2-2). When the
+    present a no-gateway baseline as the fastest gateway interface. When the
     canonical matrix_lat_* grid is present, the gateway pool is scoped to it — QoS-profile-
     tuned and zero-copy-variant ping-pongs measure differently-configured gateways and
     would fold into the same per-size mean. Either pool is None when empty.

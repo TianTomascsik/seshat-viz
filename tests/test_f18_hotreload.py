@@ -1,7 +1,7 @@
 """
 Regression tests for F18 (hot-reload robustness).
 
-Guards two audited defects:
+Guards two invariants of F18:
 
 * F18-1 — the takeaway multiplied the reload-event count by the repetition count
   ("~288 reload events"), but the harness arms exactly ONE reload per scenario (the
@@ -13,7 +13,7 @@ Guards two audited defects:
   scenario's reload-free runs; when it is not, the dilution must be disclosed.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f18.py`) so it needs no extra dev dependency.
+(`python tests/test_f18_hotreload.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

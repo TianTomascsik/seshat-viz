@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Render the print (thesis) variants and stage them into the Masterarbeit img/ tree.
+# Thesis-specific batch export, kept as a worked example of driving seshat-viz for a
+# multi-campaign print export: per-figure source runs, the print variant, a manifest
+# provenance check, and staging the vector PDFs under stable names for a LaTeX build.
 #
 #   scripts/export_thesis_figures.sh [RUN_PROCFS] [RUN_EBPF] [RUN_QOS] [RUN_PERF]
 #
-# The thesis figure set is fed by FOUR campaign runs (the manifest records which
+# The print figure set is fed by FOUR campaign runs (the manifest records which
 # figure came from which — the post-render check below fails loud on a mismatch):
 #   RUN_PROCFS  — the unperturbed procfs pass: every figure except F9/F24/F30
 #   RUN_EBPF    — the eBPF pass: F9 only (per-syscall counters)
@@ -13,9 +15,8 @@
 # The two-host wire figures (F26–F28) come from the wire campaign dirs under
 # WIRE_RESULTS, and F29 finds its relay-backend-ab-* dirs next to RUN_PROCFS.
 # The renders land in figures-thesis/ (captions.txt + manifest.json are the citation
-# source for chapter 8) and the vector PDFs are copied to $IMG (default
-# figures-thesis/export; point IMG at a LaTeX img/ tree) under the eval_* names the
-# chapter includes.
+# source) and the vector PDFs are copied to $IMG (default figures-thesis/export;
+# point IMG at a LaTeX img/ tree) under the stable eval_* names a document includes.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -25,8 +26,7 @@ RUN_EBPF="${2:-${SESHAT_RUN_EBPF:?pass the eBPF run dir (F9) as arg 2 or set SES
 RUN_QOS="${3:-${SESHAT_RUN_QOS:?pass the qos_isolation run dir (F24) as arg 3 or set SESHAT_RUN_QOS}}"
 RUN_PERF="${4:-${SESHAT_RUN_PERF:?pass the kernel-scope perf ladder run dir (F30) as arg 4 or set SESHAT_RUN_PERF}}"
 OUT="figures-thesis"
-# Where the eval_* vector PDFs are staged for the thesis; override IMG to point at a
-# LaTeX img/ tree (the historical default was ../Masterarbeit/img).
+# Where the eval_* vector PDFs are staged; override IMG to point at a LaTeX img/ tree.
 IMG="${IMG:-figures-thesis/export}"
 FIGS_PROCFS="F11,F2,F3,F7,F8,F12,F15,F16,F17,F18,F19,F20,F23,F25,F29"
 
@@ -139,13 +139,3 @@ for stem in "${!MAP[@]}"; do
     fi
 done
 echo "exported $copied figure PDF(s) to $IMG"
-
-# Queue-study citation source (§8.5 prose numbers) — only when the sibling
-# mpsc_priority_bench checkout is present.
-QUEUE_SUMMARY="../mpsc_priority_bench/criterion_thesis_summary.py"
-if [ -f "$QUEUE_SUMMARY" ]; then
-    "$PY" "$QUEUE_SUMMARY" >/dev/null
-    echo "refreshed ../mpsc_priority_bench/analysis_out/thesis_caption.txt"
-else
-    echo "skip: $QUEUE_SUMMARY not present (queue-study citation source not refreshed)"
-fi

@@ -1,17 +1,18 @@
 """
 F30 — Hardware-counter evidence: relay copy cost and the protection ladder.
 
-Two claims in chapter 8 are argued without microarchitectural evidence: the io_uring
-adoption rule's "CPU cost per byte" term (§8.4) and the "memory and kernel bound"
-attribution of the plaintext stream path vs the AEAD-bound encrypted path (§8.3.5).
-This figure carries the direct measurement, from two kernel-scope `perf stat` campaigns:
+Two claims that throughput numbers alone cannot attribute get their direct
+measurement here: the "CPU cost per byte" term of the relay-backend (splice vs
+io_uring) comparison, and the "memory and kernel bound" attribution of the plaintext
+stream path vs the AEAD-bound encrypted path. Both are read from two kernel-scope
+`perf stat` campaigns:
 
   A  CPU cycles per payload byte, by relay backend and message size   (relay perf pass)
   B  cache misses per payload byte, by relay backend and message size (relay perf pass)
   C  cache-miss rate (misses ÷ references) across the protection ladder (ladder slice)
   D  instructions per cycle across the same ladder                      (ladder slice)
 
-Panels A/B compare the four relay backends of §8.4 on the plaintext routing path —
+Panels A/B compare the four relay backends on the plaintext routing path —
 zero-copy (poll+splice, io_uring splice) against copying (poll+read/write, io_uring
 recv/send) — normalised by the bytes each cell actually moved (runs.csv totals) and
 averaged over the 1/4/16/64-connection cells. Panels C/D climb routing → TLS 1.3 →
@@ -21,12 +22,13 @@ Honesty gates: the figure REFUSES to render (record_skip, no placeholder panels)
 both campaign sources exist AND both pass :func:`derive.perf_user_scope_only` — an
 unprivileged (paranoid>=2) perf run silently demotes every event to user scope, which
 turns these panels into user-vs-kernel attribution artifacts. The two campaigns run two
-gateway builds (the io_uring experiment branch vs mainline) under one harness build;
+gateway builds (an io_uring-enabled build vs mainline) under one harness build;
 no panel mixes rows across builds, and the method note discloses the split.
 
 Sources: the ladder slice is the run directory this figure is invoked on (RUN_PERF in
 the export script); the relay pass is found by globbing ``relaybackend-perf-*`` beside
-it — deliberately NOT matching F29's ``relay-backend-ab-*`` July dirs.
+it — deliberately NOT matching F29's ``relay-backend-ab-*`` trees, so the two
+figures can never read each other's campaign.
 """
 
 from __future__ import annotations
@@ -284,8 +286,8 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         T.add_takeaway(fig, take + ".")
 
     note = (
-        "A/B: relay-backend perf pass, plaintext routing path, gateway built from the "
-        "io_uring experiment branch (--features io_uring); counters divided by the bytes "
+        "A/B: relay-backend perf pass, plaintext routing path, gateway built with "
+        "io_uring enabled (--features io_uring); counters divided by the bytes "
         "each cell moved (runs.csv totals) and averaged over the 1/4/16/64-connection "
         "cells; 64 B bars are per-message-framing dominated. C/D: protection-ladder slice "
         "at 16 KiB, 1 connection, single gateway, mainline gateway build; miss rate = "

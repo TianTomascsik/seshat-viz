@@ -1,15 +1,15 @@
 """
 Regression tests for F1 (throughput–latency landscape).
 
-Guards the audited headline defects:
+Guards the headline invariants of F1:
 - the sustained-blast slice must exclude ``paced_*`` (rate-capped latency runs) and
   ``shmzc_*`` (zero-copy slot microbenchmarks) rows, so neither can fabricate the point
-  cloud's low-latency frontier nor crown a callout (audit F1-1/F1-2, D1-5);
+  cloud's low-latency frontier nor crown a callout;
 - the extreme callouts must crown trusted rows WITH a gateway in the path
-  (``n_gateways >= 1``) — loopback baselines are plotted but never headline (audit F1-3).
+  (``n_gateways >= 1``) — loopback baselines are plotted but never headline.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f1.py`) so it needs no extra dev dependency.
+(`python tests/test_f01_landscape.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ class _CapturingSaver(theme.Saver):
 
 
 def _landscape_summary() -> pd.DataFrame:
-    """The audit's crown-hazard shape in miniature: leaked paced/shmzc rows holding the
+    """The crown-hazard shape in miniature: leaked paced/shmzc rows holding the
     global extremes, trusted loopback rows holding the leak-free extremes, a faster
     harness-limited gateway row, and the two honest gateway rows that must crown."""
     cols = ("scenario", "transport", "protocol", "message_bytes", "connections",

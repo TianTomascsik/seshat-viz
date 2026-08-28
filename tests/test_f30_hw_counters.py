@@ -3,7 +3,7 @@ F30 hardware-counter figure — honesty gates and normalisation.
 
 The figure draws from TWO kernel-scope perf campaigns (relay pass + ladder slice) and
 must refuse — not placeholder — anything less: missing sources, counter-free runs, and
-user-scope-demoted data (the stale thesis-perf dirs on disk are exactly that). Also pins
+user-scope-demoted data. Also pins
 the cycles/byte normalisation, the F29 palette contract, the two-build disclosure, and
 that F29's and F30's source discovery can never cross-match.
 """
@@ -21,7 +21,7 @@ from seshat_viz.figures import hw_counters, relay_backend
 from seshat_viz.loader import RunBundle
 
 # Kernel-plausible vs user-scope-demoted counter magnitudes (same constants family as
-# test_fix_f9): 8.8e10 cycles over 35 s task-clock = 2.5 GHz; 1.4e9 = 0.04 GHz.
+# test_f09_resource_cost): 8.8e10 cycles over 35 s task-clock = 2.5 GHz; 1.4e9 = 0.04 GHz.
 _TASK_CLOCK_MS = 35_000.0
 _PLAUSIBLE_CYCLES = 8.8e10
 _DEMOTED_CYCLES = 1.4e9
@@ -191,7 +191,7 @@ def test_chrome_discloses_two_builds_and_both_sources():
         _write_relay_tree(root / "campaign")
         saver = _run(root, _ladder_summary())
         method = _chrome(saver, "method")
-        assert "io_uring experiment branch" in method, method
+        assert "--features io_uring" in method, method
         assert "mainline gateway build" in method, method
         assert "different gateway builds" in method, method
         prov = _chrome(saver, "provenance")
@@ -199,7 +199,7 @@ def test_chrome_discloses_two_builds_and_both_sources():
 
 
 def test_f29_f30_source_discovery_never_crosses():
-    """A results root holding BOTH a July relay-backend-ab-* tree and a
+    """A results root holding BOTH a relay-backend-ab-* tree and a
     relaybackend-perf-* tree: each figure's discovery picks only its own."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)

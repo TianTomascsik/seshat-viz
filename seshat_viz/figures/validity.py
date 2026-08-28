@@ -46,7 +46,7 @@ def _zone_on_white(sem_key: str):
 
     Legend swatches are drawn in this composited colour (instead of re-applying
     an unrelated alpha) so the legend matches what the band actually looks like
-    on the page (audit: legend-vs-band colour mismatch).
+    on the page.
     """
     from matplotlib.colors import to_rgb
 
@@ -84,7 +84,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     head_all = pd.to_numeric(df["headroom"], errors="coerce")
     # Rows with no ceiling probe at all are OUTSIDE this audit — nearly all of them still
     # report a throughput, and the throughput/paced subset (hotreload above all) feeds other
-    # thesis figures, so the "run-wide" claim must disclose the exclusion (audit F11-2).
+    # comparison figures, so the "run-wide" claim must disclose the exclusion.
     unassessed = head_all.isna()
     n_unassessed = int(unassessed.sum())
     n_unassessed_tput = (
@@ -102,7 +102,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     # headroom = ceiling ÷ measured, so a non-positive ceiling means the null probe FAILED
     # (returned no data), not that the row beat it. Binning such rows below 1× would smuggle
     # a probe failure into the under-read count, force the log ECDF axis down to an
-    # unplottable x=0, and park a zero-length bar in the worst slice (audit F11-1) — exclude
+    # unplottable x=0, and park a zero-length bar in the worst slice — exclude
     # them from the pool and disclose the count in the headline instead.
     probe_failed = d["headroom"] <= 0
     if "ceiling_gbps" in d.columns:
@@ -266,7 +266,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                         color=T.GREYS["annot"])
 
     # Legend patches mirror the bars exactly (SEM verdict fill + edge), so the key
-    # can never drift from what the bars actually wear (audit: colour mismatch).
+    # can never drift from what the bars actually wear.
     handles = [
         plt.matplotlib.patches.Patch(facecolor=T.SEM["ok"], edgecolor=T.GREYS["edge"],
                                      linewidth=0.5, label="trustworthy (gateway-bound)"),

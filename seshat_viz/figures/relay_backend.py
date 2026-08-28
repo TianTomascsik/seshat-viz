@@ -1,9 +1,9 @@
 """
 F29 — Relay-backend A/B on the SCG routing path (splice / read-write / io_uring).
 
-Port of the io-uring experiment branch's ``scripts/plot_relay_backend_ab.py`` into the
-figure pipeline (it produced the thesis' only raster, off-theme figure). The computation is
-kept verbatim; only the presentation goes through the shared theme.
+Compares the gateway's selectable relay backends — the shipped poll+splice zero-copy
+path against the copying poll+read/write path and the two io_uring variants — on
+throughput, worker-thread footprint, context switches, and syscalls per message.
 
 Reads the two ``relay-backend-ab-*`` SESHAT result trees that live next to the bundle's
 campaign (no hardcoded numbers) and emits a 2×2 figure:
@@ -120,7 +120,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         saver.record_skip(
             FIG_ID, NAME,
             "no relay-backend-ab-* campaign with procfs rows next to this run "
-            "(run the relay-backend A/B from the io-uring experiment branch)")
+            "(run the relay-backend A/B with an io_uring-enabled gateway build)")
         return
 
     procfs = _load_aggregate(procfs_dir / "aggregate.csv", "procfs")
@@ -261,5 +261,5 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     T.add_provenance(
         fig,
         f"procfs: {procfs_dir.name} · eBPF: {ebpf_dir.name if ebpf_dir else '—'} "
-        "· relay-backend A/B campaigns (io-uring experiment branch)")
+        "· relay-backend A/B campaigns (io_uring-enabled gateway build)")
     saver.save(fig, NAME, fig_id=FIG_ID, title=TITLE)

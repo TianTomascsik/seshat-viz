@@ -1,7 +1,7 @@
 """
 Regression tests for F20 (cipher-suite AEAD cost grid).
 
-Guards three audited failure modes:
+Guards three failure modes:
   * F20-1 — harness-limited cells (both ciphers pinned at the load-generator ceiling, the
     whole DTLS facet in the nightly) rendered indistinguishably from trusted cells and fed
     the takeaway median; they must be hatched, disclosed in the method note, and excluded
@@ -15,7 +15,7 @@ Guards three audited failure modes:
     on the CPU% stand-in until ≥2 ciphers carry counters.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f20.py`) so it needs no extra dev dependency.
+(`python tests/test_f20_cipher_cost.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

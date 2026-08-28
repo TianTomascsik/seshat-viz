@@ -1,7 +1,7 @@
 """
 Regression tests for F23 (handshake-algorithm cost).
 
-Guards the audited defects in this figure:
+Guards the invariants of F23:
 
   * F23-1 — cell selection used a keyless `iloc[0]` behind an always-NaN `conn_threads`
     facet, so which replicate got rendered depended on summary.csv row order: reversing the
@@ -15,7 +15,7 @@ Guards the audited defects in this figure:
     spans must fall back to linear.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f23.py`) so it needs no extra dev dependency.
+(`python tests/test_f23_handshake_cost.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

@@ -1,5 +1,10 @@
 """
-Tests for SCG-SESHAT/scripts/merge_peer_out.py — the peer sink-report merge.
+Tests for SCG-SESHAT's ``scripts/merge_peer_out.py`` — the peer sink-report merge.
+
+The script under test lives in the SESHAT harness repository
+(https://github.com/TianTomascsik/SCG-SESHAT), conventionally checked out as a
+sibling ``../SCG-SESHAT/`` of this repo; the whole module skips when that
+checkout is absent.
 
 The merge is positional (burst k ↔ k-th traffic-bearing cell) with byte-count
 corroboration, so these tests guard the refusal paths above all: a shifted or
@@ -16,6 +21,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -23,6 +30,10 @@ from wire_fixtures import make_campaign, row  # noqa: E402
 
 _SCRIPT = (Path(__file__).resolve().parents[2] / "SCG-SESHAT" / "scripts" /
            "merge_peer_out.py")
+
+if not _SCRIPT.is_file():  # standalone clone without the sibling harness checkout
+    pytest.skip(f"sibling SCG-SESHAT checkout not present (expected {_SCRIPT})",
+                allow_module_level=True)
 
 
 def _load_module():

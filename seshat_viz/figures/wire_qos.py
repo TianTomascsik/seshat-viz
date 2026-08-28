@@ -173,7 +173,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     axa.set_ylabel("safety-probe RTT p99 (µs, log)")
     axa.set_xticks(x)
     # Two-line tick labels: "wire · no qdisc" as one line collides with its neighbours
-    # at panel width (audit: 8.16 tick garble).
+    # at panel width.
     axa.set_xticklabels([label.replace(" · ", "\n") for label, _ in conditions],
                         fontsize=T.FS["small"])
     axa.grid(axis="y", which="both", alpha=0.5)

@@ -1,7 +1,7 @@
 """
 Regression tests for F3 (crypto overhead vs same-transport routing baseline).
 
-Guards the audited takeaway/labelling defects:
+Guards the takeaway/labelling invariants of F3:
   * the "AES-GCM ceiling" mean must exclude transports whose crypto rows are transport-bound,
     not AES-bound (a datagram-rate-bound UDP path 30x below the plateau deflated the ceiling
     and contradicted the transport-independence claim inside its own average);
@@ -14,7 +14,7 @@ Guards the audited takeaway/labelling defects:
     figure divides by.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f3.py`) so it needs no extra dev dependency.
+(`python tests/test_f03_crypto_overhead.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def _panel(tr: str, base: float, schemes: dict[str, float], *,
 
 
 # ------------------------------------------------------------------------------------------
-# _takeaway_text: ceiling pool + matched-scheme contrast (audit F3-1 / F3-2)
+# _takeaway_text: ceiling pool + matched-scheme contrast
 # ------------------------------------------------------------------------------------------
 
 def test_takeaway_ceiling_excludes_datagram_bound_transport():
@@ -105,7 +105,7 @@ def test_takeaway_integrity_profile_stays_out_of_the_aes_ceiling():
 
 
 # ------------------------------------------------------------------------------------------
-# Panel-title baseline precision (audit F3-4)
+# Panel-title baseline precision
 # ------------------------------------------------------------------------------------------
 
 def test_panel_title_base_precision():
@@ -144,7 +144,7 @@ def _bundle(summary: pd.DataFrame) -> RunBundle:
 
 def _f3_summary() -> pd.DataFrame:
     """Three transports x (routing + crypto) at one 256B/1c/direct cell, with a sub-1 Gbps
-    datagram-bound UDP baseline and a mix of harness-limited flags — the audited shape."""
+    datagram-bound UDP baseline and a mix of harness-limited flags — the guarded shape."""
     rows = [
         # scenario, transport, protocol, tput, harness_limited
         ("matrix_routing_tcp_tcp_256B_direct_1c", "tcp", "none", 22.3997, True),

@@ -1,7 +1,7 @@
 """
 Regression tests for F16 (closed-loop RTT grid + coordinated-omission inflation).
 
-Guards the two audited defects of the inflation panel:
+Guards two invariants of the inflation panel:
 
   * F16-1 — the per-protocol dumbbell must pair BOTH endpoints from the same
     (protocol, interface) cell. The old min-RTT / max-blast aggregation crossed interfaces
@@ -14,7 +14,7 @@ Guards the two audited defects of the inflation panel:
     bare "(bottom)" pointer at a panel that shows a smaller maximum.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f16.py`) so it needs no extra dev dependency.
+(`python tests/test_f16_closed_loop_rtt.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

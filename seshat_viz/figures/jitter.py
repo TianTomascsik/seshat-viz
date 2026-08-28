@@ -11,13 +11,13 @@ configurations that are both fast *and* steady are visible at a glance.
 Jitter is recorded on only a subset of scenarios, so the matched cell is voted on the
 jitter-BEARING rows (F19-1): voting on the full measurement pool can pin a payload size
 where entire transports carry no encrypted jitter, silently collapsing the crypto story to
-a single transport. The comparison also pins topology (F19-2): 0-gateway loopback/baseline
+a single transport. The comparison also pins topology: 0-gateway loopback/baseline
 rows are excluded and the gateway count joins the matched-cell controls, so a no-gateway
 baseline never stands in for a gateway configuration.
 
-Both jitter axes are log-scaled (V5) so the routing cluster separates from the crypto/DTLS
+Both jitter axes are log-scaled so the routing cluster separates from the crypto/DTLS
 outliers instead of collapsing onto the axis floor. SHM rows draw hollow, keyed by a legend
-entry in each panel (V6): PDV cannot see SHM's *steady* multi-ms stall offset — jitter is
+entry in each panel: PDV cannot see SHM's *steady* multi-ms stall offset — jitter is
 the wrong lens for SHM until that harness stall is fixed (see theme.SHM_STALL_NOTE).
 """
 
@@ -115,7 +115,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     from matplotlib.patches import Patch
 
     def _stall_handle(wrap: bool = False) -> Line2D:
-        # The one stall-affected encoding (V6): hollow marks, keyed in every panel legend.
+        # The one stall-affected encoding: hollow marks, keyed in every panel legend.
         # `wrap` breaks the label over two lines for narrow in-axes legends.
         label = ("hollow = stall-affected\n(harness receive-poll)" if wrap
                  else "hollow = stall-affected (harness receive-poll)")
@@ -213,7 +213,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                              for t, p in zip(a["transport"], a["protocol"])], fontsize=T.FS["annot"])
         axa.invert_yaxis()
         # Log-x so the routing cluster separates from the crypto/DTLS outliers instead of
-        # collapsing against the left spine (V5).
+        # collapsing against the left spine.
         axa.set_xscale("log")
         lo, hi = float(a["jitter_us_mean"].min()), float(a["jitter_us_mean"].max())
         axa.set_xlim(lo * 0.5, hi * 4.0)  # room for the right-hand value labels
@@ -247,7 +247,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                             marker=T.transport_marker(str(r["transport"])),
                             s=95, edgecolor=T.GREYS["edge"], linewidth=0.5, zorder=3)
         # Log-y for the same reason as Panel A: without it the worst outliers flatten the
-        # entire routing cluster onto the axis floor (V5).
+        # entire routing cluster onto the axis floor.
         axb.set_yscale("log")
         med_j = float(np.nanmedian(tbl["jitter_us_mean"]))
         axb.axhline(med_j, color=T.GREYS["faint"], ls="--", lw=0.9, zorder=1)

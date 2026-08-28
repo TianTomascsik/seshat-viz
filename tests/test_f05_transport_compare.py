@@ -1,7 +1,7 @@
 """
 Regression tests for F5 (transport radar + absolute bars).
 
-Guards the 2026-07-07 audit fixes:
+Guards the invariants of F5:
   * F5-1 (P0): the "low loss" radar axis crowned the ONLY lossy transport "best" — a
     ratio-to-best over positive values used the lossy row's own 43.67% as the reference,
     so every vertex (zero-loss and 43%-loss alike) landed at 1.0. loss_pct now maps to
@@ -15,7 +15,7 @@ Guards the 2026-07-07 audit fixes:
     absolute Gbps panel is a load-generator lower bound.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f5.py`) so it needs no extra dev dependency.
+(`python tests/test_f05_transport_compare.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 

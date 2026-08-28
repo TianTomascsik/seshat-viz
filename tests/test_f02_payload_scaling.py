@@ -1,16 +1,16 @@
 """
 Regression tests for F2 (payload-size scaling) — the honest closed-loop RTT row.
 
-Guards the audited contaminations of the bottom row (audit F2-1/F2-2/F2-3/F2-4):
-the RTT pool once took ANY row carrying `rtt_us_p99`, so rate-capped paced iface_* rows,
-QoS-profile-tuned ping-pongs and zero-copy shmzc variants blended into the gateway means,
+Guards the bottom row against its contamination classes:
+a naive RTT pool takes ANY row carrying `rtt_us_p99`, so rate-capped paced iface_* rows,
+QoS-profile-tuned ping-pongs and zero-copy shmzc variants would blend into the gateway means,
 and 0-gateway loopback probes (named `*_direct`/`*_loopback`) rendered under the
 '1 gateway (scg-direct)' legend — presenting a no-gateway baseline as the fastest gateway
-path. The quoted RTT band and the scope sentences were hardcoded ('~11–60 µs',
-'TCP/UDP at ~1 KB today') and drifted from the data; they must be computed at render time.
+path. The quoted RTT band and the scope sentences must be computed at render time;
+hardcoded values drift from the data.
 
 Runnable either under pytest (`pytest tests/`) or as a plain script
-(`python tests/test_fix_f2.py`) so it needs no extra dev dependency.
+(`python tests/test_f02_payload_scaling.py`) so it needs no extra dev dependency.
 """
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def _row(scenario, transport, protocol, size, *, tput=np.nan, blast=np.nan, rtt=
 
 def _mixed_summary() -> pd.DataFrame:
     """The real-run shape in miniature: a matrix blast sweep, the matrix_lat_* closed-loop
-    grid, plus every contaminant class the audit found leaking into the RTT row."""
+    grid, plus every contaminant class that can leak into the RTT row."""
     rows = []
     # Blast rows (top/middle rows' pool) — both chains on tcp, direct-only on udp.
     for size in (64, 1024):
@@ -65,13 +65,13 @@ def _mixed_summary() -> pd.DataFrame:
     for size, rtt in ((64, 44.0), (1024, 46.0), (65536, 300.0)):
         rows.append(_row(f"matrix_lat_routing_tcp_tcp_{size}B_direct_1c", "tcp", "none",
                          size, rtt=rtt))
-    # Contaminants (audit F2-1): paced open-loop iface rows carrying rtt percentiles,
+    # Contaminants: paced open-loop iface rows carrying rtt percentiles,
     # a QoS-tuned profile ping-pong, and a zero-copy shmzc rtt variant.
     rows.append(_row("iface_tcp_loopback_latency_1KB", "tcp", "none", 1024, rtt=12.0))
     rows.append(_row("iface_tcp_scg_latency_1KB", "tcp", "none", 1024, rtt=48.0))
     rows.append(_row("profile_routing_latency_pingpong_1KB", "tcp", "none", 1024, rtt=31.0))
     rows.append(_row("shmzc_tcp_rtt_1KB", "tcp", "none", 1024, rtt=44.6))
-    # Loopback ping-pong probes (audit F2-2): 0 gateways, `direct`-chain names — UDP has
+    # Loopback ping-pong probes: 0 gateways, `direct`-chain names — UDP has
     # ONLY these (no gateway ping-pong data at all).
     rows.append(_row("pp_tcp_loopback_1KB", "tcp", "none", 1024, rtt=12.6))
     rows.append(_row("pp_udp_loopback_64B", "udp", "none", 64, rtt=10.8))
@@ -106,7 +106,7 @@ def test_rtt_gateway_pool_excludes_paced_profile_and_shmzc_rows():
     assert gw is not None
     names = set(gw["scenario"])
     assert names == {f"matrix_lat_routing_tcp_tcp_{s}B_direct_1c" for s in (64, 1024, 65536)}
-    # The blended 1 KB mean was the audit's smoking gun (46 µs rendered as ~21 µs): with a
+    # A blended 1 KB mean is the smoking gun this guards (46 µs rendered as ~21 µs): with a
     # clean pool the per-size mean equals the matrix_lat value exactly.
     assert float(gw.loc[gw["message_bytes"] == 1024, "rtt_us_p99"].mean()) == 46.0
 
