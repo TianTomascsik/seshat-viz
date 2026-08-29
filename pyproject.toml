@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "seshat-viz"
 version = "0.1.0"
-description = "Thesis-grade visualizations of SESHAT (SCG benchmark harness) measurements"
+description = "Publication-grade figure generation for SESHAT (SCG benchmark harness) results"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT OR Apache-2.0"

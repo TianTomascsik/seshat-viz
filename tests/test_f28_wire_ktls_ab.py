@@ -104,7 +104,7 @@ def test_both_variants_render_and_skip_path():
     with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as out:
         _campaigns(Path(tmp))
         wb = load_wire(tmp)
-        for variant in ("thesis", "full"):
+        for variant in ("print", "full"):
             theme.set_variant(variant)
             try:
                 saver = theme.Saver(Path(out) / variant, formats=("png",))

@@ -152,12 +152,12 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     import matplotlib.ticker as mticker
     from matplotlib.patches import Patch
 
-    # Thesis variant: one operating point only (the widest client count) so each panel keeps
+    # Print variant: one operating point only (the widest client count) so each panel keeps
     # a single bar/dumbbell pair, and a 15 cm-friendly canvas. The comparison ratio already
     # comes from the widest count, so nothing in the takeaway changes.
-    thesis = T.thesis_variant()
+    in_print = T.print_variant()
     ncol = 2 if have_hs else 1
-    if thesis:
+    if in_print:
         figsize = (7.6 if have_hs else 4.6, 2.9 * len(families))
     else:
         figsize = (11.4 if have_hs else 6.2, 3.9 * len(families))
@@ -169,7 +169,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
 
     for r, (title, sub, labels) in enumerate(families):
         facet_vals = sorted(v for v in sub["facet"].dropna().unique()) or [np.nan]
-        if thesis and len(facet_vals) > 1:
+        if in_print and len(facet_vals) > 1:
             facet_dropped = True
             facet_vals = facet_vals[-1:]
         n = len(facet_vals)
@@ -205,7 +205,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         axa.set_xticks(x)
         axa.set_xticklabels(labels, fontsize=T.FS["small"])
         axa.set_ylabel("connections / second\n(higher = better)", fontsize=T.FS["small"])
-        T.panel_title(axa, title if thesis else f"{title}  ·  establishment rate")
+        T.panel_title(axa, title if in_print else f"{title}  ·  establishment rate")
         axa.grid(axis="y")
         if n > 1 and facet_word:
             T.legend_inline(
@@ -237,7 +237,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                 if np.isfinite(p50) and np.isfinite(p99):
                     axb.plot([p50, p99], [i, i], color=col, lw=2.0, zorder=1)
                 if np.isfinite(p50):
-                    # Hollow = p50 (the one percentile convention, thesis-wide).
+                    # Hollow = p50 (the one percentile convention, suite-wide).
                     axb.scatter([p50], [i], facecolor="white", edgecolor=col, s=40,
                                 linewidth=1.3, zorder=2)
                     axb.annotate(f"{p50:.0f}", (p50, i), xytext=(0, 6), textcoords="offset points",
@@ -258,7 +258,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                 f"handshake latency µs (p50→p99{', log' if scale == 'log' else ''}, lower = better)",
                 fontsize=T.FS["small"],
             )
-            T.panel_title(axb, "handshake latency" if thesis else f"{title}  ·  handshake latency")
+            T.panel_title(axb, "handshake latency" if in_print else f"{title}  ·  handshake latency")
             axb.grid(axis="x", which="both", alpha=0.4)
             T.legend_inline(axb, T.percentile_handles(), loc="upper right")
 

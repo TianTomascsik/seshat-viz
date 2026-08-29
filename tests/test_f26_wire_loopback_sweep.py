@@ -74,7 +74,7 @@ def test_dedupe_prefers_knee_and_takeaway_uses_plateau():
         knee = f26._knee(sel[sel["medium"] == "wire"])
         assert knee is not None and knee["offered_gbps"] == 0.96
 
-        theme.set_variant("thesis")
+        theme.set_variant("print")
         try:
             saver = theme.Saver(Path(out), formats=("png",))
             f26.make(_bundle(wb), saver)

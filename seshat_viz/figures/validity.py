@@ -131,12 +131,12 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         plural = "s" if n_probe_failed != 1 else ""
         pass_note += f" · {n_probe_failed} failed ceiling probe{plural} excluded"
 
-    # ---- Thesis variant: the run-wide ECDF panel alone -----------------------------------
+    # ---- Print variant: the run-wide ECDF panel alone -----------------------------------
     # The worst-slice bar panel is an exploration aid (36 scenario labels at 7 pt cannot
     # survive a 15 cm text column); the distribution + gate + counts are the evaluative
     # content, so the print figure is the honest single panel with everything computed.
-    if T.thesis_variant():
-        _make_thesis(bundle, saver, all_headroom=all_headroom,
+    if T.print_variant():
+        _make_print(bundle, saver, all_headroom=all_headroom,
                      n_run=n_run, n_all=n_all, n_pass=n_pass, n_fail=n_fail,
                      n_below1=n_below1, n_sub_gate=n_sub_gate,
                      median=float(d["headroom"].median()),
@@ -315,7 +315,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     saver.save(fig, NAME, fig_id=FIG_ID, title=TITLE)
 
 
-def _make_thesis(bundle: RunBundle, saver: T.Saver, *, all_headroom, n_run: int,
+def _make_print(bundle: RunBundle, saver: T.Saver, *, all_headroom, n_run: int,
                  n_all: int, n_pass: int, n_fail: int, n_below1: int, n_sub_gate: int,
                  median: float, n_probe_failed: int, n_unassessed: int,
                  n_unassessed_tput, pass_note: str) -> None:

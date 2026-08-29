@@ -1,11 +1,11 @@
 """
-theme.py — one consistent visual identity for every thesis figure.
+theme.py — one consistent visual identity for every figure.
 
 Provides:
   * stable, colorblind-safe colors keyed by transport and by protocol, so a given
     color means the same thing in *every* figure;
-  * `apply_thesis_style()` — print-friendly matplotlib rcParams (serif body font to
-    match a LaTeX thesis, restrained grid/spines);
+  * `apply_print_style()` — print-friendly matplotlib rcParams (serif body font to
+    match a LaTeX document, restrained grid/spines);
   * `Saver` — writes each figure as BOTH a vector PDF (for \\includegraphics) and a
     raster PNG preview in one call, and records a manifest;
   * figure chrome — `set_headline()` (the ONLY way figures may set their headline;
@@ -122,7 +122,7 @@ def palette_for(values: Sequence[str]) -> List[str]:
 # always GREYS["ink"] or GREYS["annot"] at regular weight (white is permitted
 # only for labels inside dark filled bars). Badges are plain ink text with no
 # box. The chrome takeaway banner keeps ACCENT — it is chrome, stripped from
-# thesis renders.
+# print renders.
 ACCENT = "#B2182B"
 GRID = "#D9D9D9"
 HARNESS_HATCH = "////"
@@ -141,7 +141,7 @@ GREYS = {
 
 # Semantic verdict colours — fills and bands that pass judgement (headroom
 # classes, expected-vs-unexpected DSCP marks, coverage states). One meaning per
-# hex, thesis-wide; never reused as "series 4". `bad` deliberately shares the
+# hex, suite-wide; never reused as "series 4". `bad` deliberately shares the
 # ACCENT hex: one red in the whole document, role-constrained by the policy
 # above. `neutral` is grey by design (the no-verdict state) and `warn` sits
 # below 3:1 contrast on white, so every SEM fill carries an adjacent label or
@@ -205,7 +205,7 @@ FS = {
 #     alpha-fade, grey-out and red-patch variants are retired.
 
 # Figure "chrome" = the self-describing text layers (headline, grey footer lines, the
-# ▸ takeaway banner). Enabled by default; the CLI's --no-chrome disables it for thesis
+# ▸ takeaway banner). Enabled by default; the CLI's --no-chrome disables it for print
 # embedding, where the LaTeX caption carries that information instead.
 _CHROME_ENABLED = True
 
@@ -221,17 +221,21 @@ def chrome_enabled() -> bool:
 
 
 # Render variant. "full" is the exploratory dashboard render (every panel, every series);
-# "thesis" is the print variant: each figure module may subset its panels/series to what a
+# "print" is the print variant: each figure module may subset its panels/series to what a
 # 15 cm text column can carry and recompute its takeaway over the reduced set. The variant
 # NEVER changes how numbers are computed — only which panels are drawn and which takeaway
 # text is recorded. Mirrors the chrome switch above.
 _VARIANT = "full"
-VARIANTS = ("full", "thesis")
+VARIANTS = ("full", "print")
 
 
 def set_variant(variant: str) -> None:
-    """Globally select the render variant ("full" or "thesis")."""
+    """Globally select the render variant ("full" or "print")."""
     global _VARIANT
+    if variant == "thesis":
+        # Historical name of the print variant; kept as a silent alias so
+        # existing invocations keep working.
+        variant = "print"
     if variant not in VARIANTS:
         raise ValueError(f"unknown variant {variant!r}; expected one of {VARIANTS}")
     _VARIANT = variant
@@ -241,9 +245,9 @@ def variant() -> str:
     return _VARIANT
 
 
-def thesis_variant() -> bool:
-    """True when rendering the print (thesis) variant."""
-    return _VARIANT == "thesis"
+def print_variant() -> bool:
+    """True when rendering the print variant."""
+    return _VARIANT == "print"
 
 
 def _record_chrome(fig: "plt.Figure", kind: str, text: str) -> None:
@@ -279,7 +283,7 @@ def set_headline(fig: "plt.Figure", text: str, *, ax: "plt.Axes | None" = None, 
         fig.suptitle(text, **kwargs)
 
 
-def apply_thesis_style() -> None:
+def apply_print_style() -> None:
     """Install print-friendly rcParams. Call once before building figures."""
     plt.rcParams.update(
         {
@@ -349,7 +353,7 @@ class Saver:
 
     def save(self, fig: plt.Figure, name: str, *, fig_id: str = "", title: str = "") -> List[Path]:
         """Save `fig` as `<name>.<fmt>` for each configured format; record + close."""
-        # In --no-chrome (thesis embedding) drop the "higher/lower is better" editorial cue from
+        # In --no-chrome (print embedding) drop the "higher/lower is better" editorial cue from
         # every axis label — it is reader guidance, not data, and the caption carries it.
         if not _CHROME_ENABLED:
             for a in fig.get_axes():
@@ -558,7 +562,7 @@ def add_method_note(fig: plt.Figure, text: str, *, y: float = 0.020) -> None:
 
 def add_takeaway(fig: plt.Figure, text: str, *, y: float = -0.02) -> None:
     """
-    One bold conclusion line under the figure, so every thesis figure states *the* point.
+    One bold conclusion line under the figure, so every figure states *the* point.
 
     Rendered centered just below the axes in the accent color. Keep it short — a single
     declarative sentence ("kTLS reaches 95% of routing throughput; userspace TLS pays 2×").
@@ -646,7 +650,7 @@ def legend_below(fig: plt.Figure, handles, *, ncol: int | None = None, **kw) -> 
 
 
 def percentile_handles(color: str | None = None):
-    """Hollow = p50, filled = p99 (the one percentile convention, thesis-wide)."""
+    """Hollow = p50, filled = p99 (the one percentile convention, suite-wide)."""
     from matplotlib.lines import Line2D
 
     c = color or GREYS["annot"]

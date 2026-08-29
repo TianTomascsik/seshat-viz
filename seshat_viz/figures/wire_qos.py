@@ -117,11 +117,11 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         return
     evidence = _find_evidence(wb)
     has_qdisc = any(label == "wire · priority qdisc" for label, _ in conditions)
-    thesis = T.thesis_variant()
+    in_print = T.print_variant()
 
     import matplotlib.pyplot as plt
 
-    two_panel = evidence is not None or not thesis
+    two_panel = evidence is not None or not in_print
     if two_panel:
         fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.6),
                                  gridspec_kw={"width_ratios": [1.5, 1.0]}, squeeze=False)

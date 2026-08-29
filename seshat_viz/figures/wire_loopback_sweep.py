@@ -1,7 +1,7 @@
 """
 F26 — Loopback-testbed realism on a physical 1 GbE path (the wire campaign).
 
-The thesis' entire measurement campaign ran across loopback; this figure is the
+The entire single-host measurement campaign ran across loopback; this figure is the
 empirical answer to "how realistic was that?". The same offered-load grid was
 driven through the same gateway pair twice, changing exactly one variable — the
 inter-gateway hop's address (127.0.0.1 vs the peer's link IP) — so every panel
@@ -112,8 +112,8 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     if tcp.empty or (tcp["medium"] == "wire").sum() == 0:
         saver.record_skip(FIG_ID, NAME, "no wire sweep-tcp rows in the wire campaigns")
         return
-    thesis = T.thesis_variant()
-    udp = pd.DataFrame() if thesis else _sweep_rows(wb.df, "sweep-udp-")
+    in_print = T.print_variant()
+    udp = pd.DataFrame() if in_print else _sweep_rows(wb.df, "sweep-udp-")
 
     ceiling = pd.to_numeric(tcp["ceiling_gbps"], errors="coerce").dropna()
     ceiling = float(ceiling.iloc[0]) if not ceiling.empty else 0.9493
@@ -123,7 +123,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
 
-    nrows = 3 if thesis else 4
+    nrows = 3 if in_print else 4
     fig, axes = plt.subplots(nrows, 1, figsize=(7.6, 2.2 * nrows), sharex=True, squeeze=False)
     axa, axb, axc = axes[0][0], axes[1][0], axes[2][0]
 
@@ -187,7 +187,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     axc.set_ylim(bottom=0)
 
     # --- (d, full variant) send-lag — the knee mechanism ----------------------------------
-    if not thesis:
+    if not in_print:
         axd = axes[3][0]
         _plot_medium(axd, tcp, "send_lag_mean_us", color)
         if not udp.empty:

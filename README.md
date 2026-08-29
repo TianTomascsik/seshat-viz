@@ -1,9 +1,9 @@
-# seshat-viz — thesis-grade visualizations of SESHAT benchmark data
+# seshat-viz — publication-grade visualizations of SESHAT benchmark data
 
 `seshat-viz` turns the CSV measurement tree produced by **SESHAT** (the SCG benchmark
 harness, <https://github.com/TianTomascsik/SCG-SESHAT>, conventionally checked out as a
 sibling `../SCG-SESHAT/` of this repo) into a set of publication-quality figures for the
-Secure Communication Gateway master's thesis. It reads a results directory and emits **vector PDF
+Secure Communication Gateway evaluation. It reads a results directory and emits **vector PDF
 (for LaTeX `\includegraphics`) + PNG (preview)** figures that go well beyond plain
 bar/line charts: a throughput–latency Pareto map, payload-size scaling small-multiples,
 protocol×size heatmaps, latency-tail CCDFs + box-and-whisker, saturation knees, a
@@ -12,7 +12,7 @@ scaling, jitter/determinism, a consolidated resource-cost composite, cipher-suit
 parallel-coordinates multi-objective view.
 
 Every figure also carries a one-line **conclusion banner** (`▸ …`) stating the point it makes,
-so each can stand alone in a thesis chapter.
+so each can stand alone in a report or paper.
 
 Every figure is built to *make a measurement mean something* — compare transports and
 protocols on latency **and** throughput, expose how payload size changes the picture, and
@@ -44,7 +44,7 @@ python -m seshat_viz ../SCG-SESHAT/results/20260626-104017 --out figures
 # Just a couple of figures, PDF only
 python -m seshat_viz <run_dir> --only F1,F4,F8 --format pdf
 
-# Thesis embedding: strip the headline / grey footers / red takeaway banner so the
+# Document embedding: strip the headline / grey footers / red takeaway banner so the
 # LaTeX caption carries that text. The suppressed text lands in <out>/captions.txt.
 python -m seshat_viz <run_dir> --no-chrome
 
@@ -53,7 +53,7 @@ python -m seshat_viz <run_dir> --coverage path/to/coverage.json
 
 # Print (paper/report) variant: each figure may subset its panels to a print-legible
 # layout and recompute its takeaway accordingly. Pair with a dedicated --out dir.
-python -m seshat_viz <run_dir> --variant thesis --out figures-thesis
+python -m seshat_viz <run_dir> --variant print --out figures-print
 
 # Two-host wire campaign figures (F26-F28): point --wire-results at the results root
 # holding the wire campaign dirs (wire-run/, ab-*/, knee-*/, ...). Without it, the
@@ -65,7 +65,7 @@ python -m seshat_viz --list
 ```
 
 `--variant` selects the render variant: `full` (default) draws every panel and series —
-the exploratory dashboard; `thesis` is the print variant. `scripts/export_thesis_figures.sh`
+the exploratory dashboard; `print` is the print variant. `scripts/export_print_figures.sh`
 is a worked example of a full batch export: it renders the print variant of every figure
 from its correct source campaign, verifies the provenance manifest, and stages the vector
 PDFs under stable names for a LaTeX build.
@@ -131,7 +131,7 @@ Some figures need a dedicated campaign beyond the standard matrix run: F24 the
 QoS-isolation campaign, F26–F28 the two-host wire campaign (`--wire-results`), F29 the
 relay-backend A/B trees, F30 two kernel-scope `perf stat` campaigns, and F13's code-mode
 a `coverage.json` (`--coverage`). Generated figure sets (`figures/`, `figures-nochrome/`,
-`figures-thesis/`) are **not committed** — regenerate them from a results directory.
+`figures-print/`) are **not committed** — regenerate them from a results directory.
 
 ## How the data is read
 
@@ -231,7 +231,7 @@ These reflect SESHAT's `docs/methodology.md`
 
 - A new figure is a module under `seshat_viz/figures/` exposing `FIG_ID`, `NAME`, `TITLE`,
   and `make(bundle, saver)`; add it to `REGISTRY` in `figures/__init__.py` (registry order is
-  the build/display order — keep it in the thesis narrative).
+  the build/display order — keep it in the evaluation narrative).
 - Guard on data with `bundle.has(*cols)` and bail via `saver.record_skip(FIG_ID, NAME, reason)`
   so a missing-data figure is skipped, never a crash.
 - Colors/markers/fonts live in `seshat_viz/theme.py` (one stable color per transport and

@@ -195,23 +195,23 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                 single_only.append(t)
     columns = transports + single_only
 
-    # Thesis variant: the efficiency row alone (the absolute-throughput level gap is stated
-    # in prose, the blast-latency row is CO-uncorrected and banned from the thesis body), no
+    # Print variant: the efficiency row alone (the absolute-throughput level gap is stated
+    # in prose, the blast-latency row is CO-uncorrected and banned from the print variant), no
     # placeholder columns (their reason moves to the method note), plus a per-panel host-busy
     # line so the co-limit is visible on the figure itself.
-    thesis = T.thesis_variant()
-    if thesis:
+    in_print = T.print_variant()
+    if in_print:
         columns = transports
 
     have_lat = "latency_p99_us_mean" in tbl.columns and tbl["latency_p99_us_mean"].notna().any()
-    have_lat = have_lat and not thesis
+    have_lat = have_lat and not in_print
     # Rows: (0) scaling efficiency %, (1) ABSOLUTE throughput in Gbps, (2) p99 tail latency when
     # present. The efficiency axis normalizes each series to its own 1-connection throughput, which
     # HIDES that UDS plateaus at ~38 Gbps and SHM at ~28–37 while routed TCP climbs into the 100s;
     # the absolute panel restores that transport-level difference the % axis flattens away.
-    row_abs = None if thesis else 1
+    row_abs = None if in_print else 1
     row_lat = 2 if have_lat else None
-    nrows = 1 if thesis else (3 if have_lat else 2)
+    nrows = 1 if in_print else (3 if have_lat else 2)
 
     import matplotlib.pyplot as plt
 
@@ -219,14 +219,14 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     # stop at 16c and TCP sweeps to 1024c; a shared axis stretched the SHM/UDS panels to 1024
     # with three points bunched at the left, visually implying "SHM died early" when it was
     # simply never swept that far. Per-panel ranges make the coverage difference honest.
-    if thesis:
+    if in_print:
         figsize = (1.95 * len(columns) + 1.5, 3.4)
     else:
         figsize = (4.7 * len(columns) + 1.4, 3.5 * nrows)
     fig, axes = plt.subplots(nrows, len(columns), figsize=figsize, squeeze=False, sharex=False)
 
     protos_seen: set[str] = set()
-    busy_drawn = False  # thesis host-busy overlay actually drawn → key it in the legend
+    busy_drawn = False  # print-variant host-busy overlay actually drawn → key it in the legend
     for col, tr in enumerate(columns):
         # Single-connection-only transport: no scaling series exists. Draw a labelled placeholder
         # spanning the column so the transport is visibly accounted for, not silently absent.
@@ -246,7 +246,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         sub = tbl[tbl["transport"].astype(str) == tr]
         conns = sorted(sub["connections"].unique())
         ax_t = axes[0][col]
-        ann_ys: list[float] = []  # thesis: endpoint labels already placed (declutter)
+        ann_ys: list[float] = []  # print variant: endpoint labels already placed (declutter)
         # Plot scaling EFFICIENCY (achieved speedup ÷ ideal-linear speedup, %) rather than raw
         # speedup: a shared ideal diagonal to 1024× would crush every real curve (which peak
         # below ~10×) onto the x-axis. 100% = perfect linear scaling; the fall-off to the
@@ -280,7 +280,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                 # encodes boundness and "†" is a retired encoding.
                 # Print variant: skip labels that would overprint a neighbour (<4% apart) —
                 # the clustered series share the same reading anyway.
-                if not (thesis and any(abs(last_eff - y0) < 4.0 for y0 in ann_ys)):
+                if not (in_print and any(abs(last_eff - y0) < 4.0 for y0 in ann_ys)):
                     ann_ys.append(float(last_eff))
                     ax_t.annotate(f"{last_eff:.0f}%", (pg["connections"].iloc[-1], last_eff),
                                   xytext=(7, 0), textcoords="offset points", va="center",
@@ -295,9 +295,9 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         ax_t.margins(x=0.16)
         ax_t.grid(True, which="both")
 
-        # Thesis: overlay this transport's host-busy profile (median p95 over its plotted
+        # Print variant: overlay this transport's host-busy profile (median p95 over its plotted
         # rows) on a right axis, so the high-concurrency co-limit is visible in-panel.
-        if thesis:
+        if in_print:
             ax_t.set_xlabel("connections (log)")
             if len(conns) > 4:
                 ax_t.tick_params(axis="x", labelrotation=45)
@@ -398,10 +398,10 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     # would overprint each other, so only ONE reserves — and it must be the WIDER of the
     # two (the boundness/guide key), or the narrow protocol column reserves a margin the
     # key then overflows into the last panel (seen as the key overprinting the TPROXY
-    # x-axis in the 11.25-in thesis variant). The protocol legend anchors below the key
+    # x-axis in the 11.25-in print variant). The protocol legend anchors below the key
     # inside the same reserved margin (an explicit bbox_to_anchor opts it out of
     # reserving again); the anchor drops by the key's estimated height, so the placement
-    # holds across the thesis (3.4 in) and full (7–10.5 in) figure heights.
+    # holds across the published evaluation (3.4 in) and full (7–10.5 in) figure heights.
     T.legend_right(fig, key)
     row_frac = (T.FS["small"] * 1.7) / (fig.get_size_inches()[1] * 72.0)
     T.legend_right(fig, handles, title="protocol",
@@ -420,7 +420,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
             f"{transport_label(t)} — "
             f"{_SINGLE_ONLY_REASONS.get(t, 'no multi-connection scenarios in this run')}"
             for t in single_only)
-        where = "not drawn" if thesis else "placeholder column"
+        where = "not drawn" if in_print else "placeholder column"
         single_txt = (f"Run at a single connection only ({where}, no scaling "
                       f"series): {reasons}. ")
 
@@ -460,13 +460,13 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         busy_take = ""
     flag_txt = ("".join(f"{s}. " for s in flags.values())) if flags else ""
 
-    if thesis:
+    if in_print:
         axis_txt = ("y = achieved throughput ÷ ideal-linear (%); dashed grey line (right "
                     "axis) = median host busy p95 per connection count. ")
     else:
         axis_txt = ("Top y = achieved throughput ÷ ideal-linear (%); middle y = absolute "
                     "throughput (Gbps), the level gap the efficiency axis normalizes away. ")
-    lat_notes = "" if thesis else (T.BLAST_LATENCY_NOTE + " · " + T.SHM_STALL_NOTE)
+    lat_notes = "" if in_print else (T.BLAST_LATENCY_NOTE + " · " + T.SHM_STALL_NOTE)
     T.add_method_note(fig, f"matrix family, one topology per (transport, protocol); {swept} sweep "
                            "connection count here. " + single_txt + flag_txt +
                            f"Single loopback host, no NIC; {busy_method}. " + axis_txt

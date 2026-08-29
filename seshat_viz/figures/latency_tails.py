@@ -63,7 +63,7 @@ def _pick_size(runs: pd.DataFrame) -> int | None:
     Prefer a MID/LARGE size (≥1024 B) with the widest transport coverage, so the grid shows the
     gateway's real per-message tail rather than the 64 B corner (dominated by fixed per-syscall
     overhead, the size the old `_pick_cell` fell into). Falls back to any size if only tiny
-    payloads exist. Ties break toward the canonical 4096 / 16384 B thesis sizes.
+    payloads exist. Ties break toward the canonical 4096 / 16384 B sizes.
     """
     if "message_bytes" not in runs.columns or "transport" not in runs.columns:
         return None

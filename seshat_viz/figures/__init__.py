@@ -7,7 +7,7 @@ Each figure module exposes:
     TITLE  : str       human title for the manifest
     make(bundle, saver) -> None    draws & saves, or calls saver.record_skip(...)
 
-`REGISTRY` is the ordered list the CLI iterates over. Order follows the thesis narrative:
+`REGISTRY` is the ordered list the CLI iterates over. Order follows the evaluation narrative:
 the trade-off landscape, then transport/structural cost, the latency/determinism family,
 load & operational robustness, the resource-cost composite, and finally the
 measurement-validity / provenance figures.

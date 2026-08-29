@@ -89,7 +89,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     if ab.empty:
         saver.record_skip(FIG_ID, NAME, "no ab-* (kTLS A/B) campaigns in the wire results")
         return
-    thesis = T.thesis_variant()
+    in_print = T.print_variant()
 
     tput = ab[ab["cell"].isin(_TPUT_CELLS)]
     lo_tput = tput[tput["medium"] == "loopback"]
@@ -107,7 +107,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
 
     import matplotlib.pyplot as plt
 
-    if thesis:
+    if in_print:
         fig, axes = plt.subplots(1, 3, figsize=(7.6, 3.2), squeeze=False)
         axa, axcpu, axrtt, axwt = axes[0][0], axes[0][1], axes[0][2], None
     else:

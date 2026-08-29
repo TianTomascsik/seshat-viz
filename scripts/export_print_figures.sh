@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Thesis-specific batch export, kept as a worked example of driving seshat-viz for a
+# Print-figure batch export, kept as a worked example of driving seshat-viz for a
 # multi-campaign print export: per-figure source runs, the print variant, a manifest
 # provenance check, and staging the vector PDFs under stable names for a LaTeX build.
 #
-#   scripts/export_thesis_figures.sh [RUN_PROCFS] [RUN_EBPF] [RUN_QOS] [RUN_PERF]
+#   scripts/export_print_figures.sh [RUN_PROCFS] [RUN_EBPF] [RUN_QOS] [RUN_PERF]
 #
 # The print figure set is fed by FOUR campaign runs (the manifest records which
 # figure came from which — the post-render check below fails loud on a mismatch):
@@ -14,8 +14,8 @@
 #                 relaybackend-perf-* relay pass it finds beside RUN_PERF)
 # The two-host wire figures (F26–F28) come from the wire campaign dirs under
 # WIRE_RESULTS, and F29 finds its relay-backend-ab-* dirs next to RUN_PROCFS.
-# The renders land in figures-thesis/ (captions.txt + manifest.json are the citation
-# source) and the vector PDFs are copied to $IMG (default figures-thesis/export;
+# The renders land in figures-print/ (captions.txt + manifest.json are the citation
+# source) and the vector PDFs are copied to $IMG (default figures-print/export;
 # point IMG at a LaTeX img/ tree) under the stable eval_* names a document includes.
 set -euo pipefail
 
@@ -25,28 +25,28 @@ RUN_PROCFS="${1:-${SESHAT_RUN_PROCFS:?pass the procfs matrix run dir as arg 1 or
 RUN_EBPF="${2:-${SESHAT_RUN_EBPF:?pass the eBPF run dir (F9) as arg 2 or set SESHAT_RUN_EBPF}}"
 RUN_QOS="${3:-${SESHAT_RUN_QOS:?pass the qos_isolation run dir (F24) as arg 3 or set SESHAT_RUN_QOS}}"
 RUN_PERF="${4:-${SESHAT_RUN_PERF:?pass the kernel-scope perf ladder run dir (F30) as arg 4 or set SESHAT_RUN_PERF}}"
-OUT="figures-thesis"
+OUT="${OUT:-figures-print}"
 # Where the eval_* vector PDFs are staged; override IMG to point at a LaTeX img/ tree.
-IMG="${IMG:-figures-thesis/export}"
+IMG="${IMG:-$OUT/export}"
 FIGS_PROCFS="F11,F2,F3,F7,F8,F12,F15,F16,F17,F18,F19,F20,F23,F25,F29"
 
 PY=".venv/bin/python"
 [ -x "$PY" ] || PY="python3"
 
-"$PY" -m seshat_viz "$RUN_PROCFS" --variant thesis --no-chrome --only "$FIGS_PROCFS" \
+"$PY" -m seshat_viz "$RUN_PROCFS" --variant print --no-chrome --only "$FIGS_PROCFS" \
     --out "$OUT" --format pdf,png
-"$PY" -m seshat_viz "$RUN_EBPF" --variant thesis --no-chrome --only F9 \
+"$PY" -m seshat_viz "$RUN_EBPF" --variant print --no-chrome --only F9 \
     --out "$OUT" --format pdf,png
-"$PY" -m seshat_viz "$RUN_QOS" --variant thesis --no-chrome --only F24 \
+"$PY" -m seshat_viz "$RUN_QOS" --variant print --no-chrome --only F24 \
     --out "$OUT" --format pdf,png
-"$PY" -m seshat_viz "$RUN_PERF" --variant thesis --no-chrome --only F30 \
+"$PY" -m seshat_viz "$RUN_PERF" --variant print --no-chrome --only F30 \
     --out "$OUT" --format pdf,png
 
 # The two-host wire figures (F26–F28) come from the wire campaign dirs, not from a
 # matrix run — rendered only when WIRE_RESULTS points at a results/ root holding them.
 WIRE_RESULTS="${WIRE_RESULTS:-}"
 if [ -n "$WIRE_RESULTS" ] && [ -d "$WIRE_RESULTS/wire-run" ]; then
-    "$PY" -m seshat_viz "$RUN_PROCFS" --variant thesis --no-chrome --only F26,F27,F28 \
+    "$PY" -m seshat_viz "$RUN_PROCFS" --variant print --no-chrome --only F26,F27,F28 \
         --wire-results "$WIRE_RESULTS" --out "$OUT" --format pdf,png
 else
     echo "skip: wire figures F26-F28 (set WIRE_RESULTS to a SESHAT results root containing wire-run/)"
@@ -125,7 +125,7 @@ if errors:
     for e in errors:
         print("  " + e, file=sys.stderr)
     sys.exit(1)
-print(f"manifest check OK: {len(expected)} thesis figures, correctly attributed")
+print(f"manifest check OK: {len(expected)} print figures, correctly attributed")
 EOF
 
 mkdir -p "$IMG"

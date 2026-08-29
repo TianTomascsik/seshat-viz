@@ -145,15 +145,15 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
 
     have_mem = not mem.empty
 
-    # ---- Thesis variant: memory ladder + CPU-efficiency panel, nothing else --------------
+    # ---- Print variant: memory ladder + CPU-efficiency panel, nothing else --------------
     # The hardware-counter placeholders and the RSS-vs-throughput scatter are exploration
     # aids; the print figure carries the two loopback-robust facts (RSS separates the
     # security tiers, Gbps/core does not) and omits placeholder panels entirely.
-    if T.thesis_variant():
+    if T.print_variant():
         if not have_mem:
-            saver.record_skip(FIG_ID, NAME, "thesis variant needs memory columns")
+            saver.record_skip(FIG_ID, NAME, "print variant needs memory columns")
             return
-        _make_thesis(bundle, saver, agg=agg, mem=mem, d=d)
+        _make_print(bundle, saver, agg=agg, mem=mem, d=d)
         return
 
     # Scatter ties peak memory footprint (RSS, present on every run) to delivered throughput —
@@ -338,7 +338,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     saver.save(fig, NAME, fig_id=FIG_ID, title=TITLE)
 
 
-def _make_thesis(bundle: RunBundle, saver: T.Saver, *, agg: pd.DataFrame,
+def _make_print(bundle: RunBundle, saver: T.Saver, *, agg: pd.DataFrame,
                  mem: pd.DataFrame, d: pd.DataFrame) -> None:
     """Print variant: peak-memory ladder + Gbps/core, sized for a 15 cm text column."""
     import matplotlib.pyplot as plt

@@ -123,12 +123,12 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         saver.record_skip(FIG_ID, NAME, "no transports present")
         return
 
-    # ---- Thesis variant: the throughput row alone -----------------------------------------
-    # The blast-p99 row is CO-uncorrected (banned from the thesis body) and the honest RTT
+    # ---- Print variant: the throughput row alone -----------------------------------------
+    # The blast-p99 row is CO-uncorrected (banned from the print variant) and the honest RTT
     # story is carried by F16's print figure; what this figure owes the chapter is the
     # per-message-vs-per-byte crypto-cost claim, which lives entirely in the throughput row.
-    if T.thesis_variant():
-        _make_thesis(bundle, saver, d=d, transports=transports)
+    if T.print_variant():
+        _make_print(bundle, saver, d=d, transports=transports)
         return
 
     # Honest closed-loop RTT rows carry `rtt_us_p99` — the coordinated-omission-free service
@@ -366,7 +366,7 @@ _THESIS_PROTOS = ["none", "tls/1.3", "ktls/1.3", "tls/1.3+mtls", "tls/1.2+integr
 _THESIS_TRANSPORTS = ["shm", "shm-slot", "unix", "tcp", "udp"]  # IPC (shm byte-stream+slot, uds) / stream / datagram
 
 
-def _make_thesis(bundle: RunBundle, saver: T.Saver, *, d: pd.DataFrame,
+def _make_print(bundle: RunBundle, saver: T.Saver, *, d: pd.DataFrame,
                  transports: list) -> None:
     """Print variant: throughput vs payload size, 3 transports × 6 protocol families."""
     import matplotlib.pyplot as plt

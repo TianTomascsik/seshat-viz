@@ -3,6 +3,7 @@
 /figures/
 /figures-nochrome/
 /figures-thesis/
+/figures-print/
 
 # Python virtualenv & caches
 __pycache__/

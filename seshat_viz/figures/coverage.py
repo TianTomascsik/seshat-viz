@@ -2,7 +2,7 @@
 F13 — Code coverage (line %) by workspace/crate, with a scenario-coverage fallback.
 
 Preferred mode (when a ``coverage.json`` artifact is present): render the SCG / SCG-SESHAT /
-ale-frame line-coverage percentages against the ≥80% thesis target, per workspace and — when
+ale-frame line-coverage percentages against the ≥80% project target, per workspace and — when
 the artifact carries them — per crate. This answers "how well is the code itself tested?",
 which the reader cares about more than how many benchmark scenarios ran.
 
@@ -162,7 +162,7 @@ def _make_code_coverage(bundle: RunBundle, saver: T.Saver, cov: dict) -> None:
         fig.tight_layout()
     below = [labels[i].strip() for i, p in enumerate(pcts) if p < target and is_ws[i]]
     verdict = "all workspaces ≥ target" if not below else f"below target: {', '.join(below)}"
-    T.add_takeaway(fig, f"Line coverage vs the ≥{target:.0f}% thesis bar — {verdict}.")
+    T.add_takeaway(fig, f"Line coverage vs the ≥{target:.0f}% target — {verdict}.")
     T.add_provenance(fig, bundle.caption()
                      + (f"  ·  coverage generated {cov['generated']}" if cov.get("generated") else ""))
     saver.save(fig, NAME, fig_id=FIG_ID, title=TITLE)

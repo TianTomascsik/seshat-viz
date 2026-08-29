@@ -82,12 +82,12 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         saver.record_skip(FIG_ID, NAME, "no saturation reload rows with a matched baseline or per-run split")
         return
 
-    # ---- Thesis variant: ledger-first, distribution instead of the 96-cell heatmap -------
+    # ---- Print variant: ledger-first, distribution instead of the 96-cell heatmap -------
     # Per-cell ±few-% in the heatmap is run-to-run noise, not reload cost; the print figure
     # leads with the zero-loss ledger over EVERY reload row (saturation + sub-saturation)
     # and shows the saturation retention values as a distribution centred on 100%.
-    if T.thesis_variant():
-        _make_thesis(bundle, saver, tbl=tbl, sat=sat, undiluted=undiluted)
+    if T.print_variant():
+        _make_print(bundle, saver, tbl=tbl, sat=sat, undiluted=undiluted)
         return
 
     sat["__o"] = sat["protocol"].astype(str).map({p: i for i, p in enumerate(T.PROTOCOL_ORDER)}).fillna(99)
@@ -192,7 +192,7 @@ def _sum_counter(frame: pd.DataFrame, col: str):
     return int(pd.to_numeric(frame[col], errors="coerce").fillna(0).sum())
 
 
-def _make_thesis(bundle: RunBundle, saver: T.Saver, *, tbl: pd.DataFrame,
+def _make_print(bundle: RunBundle, saver: T.Saver, *, tbl: pd.DataFrame,
                  sat: pd.DataFrame, undiluted: bool) -> None:
     """Print variant: integrity ledger over all reload rows + saturation retention spread."""
     import matplotlib.pyplot as plt

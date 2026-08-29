@@ -219,14 +219,14 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
         slot = panels.pop(ids.index("shm-slot"))
         panels.insert([p[0] for p in panels].index("shm") + 1, slot)
 
-    # Thesis variant: throughput dumbbells only (the blast-p99 row is CO-uncorrected and
-    # banned from the thesis body), and three representative panels — the slow and fast
+    # Print variant: throughput dumbbells only (the blast-p99 row is CO-uncorrected and
+    # banned from the print variant), and three representative panels — the slow and fast
     # stream extremes (SHM, TCP) plus the datagram outlier (UDP) — so annotations stay
     # legible at 15 cm. The retained-% contrast and the ceiling takeaway are computed over
     # exactly the drawn panels, so the claim never outruns the figure.
-    thesis = T.thesis_variant()
+    in_print = T.print_variant()
     omitted_panels: list[str] = []
-    if thesis:
+    if in_print:
         keep = [p for p in panels if p[0] in ("shm", "shm-slot", "unix", "tcp", "udp")] or panels[:4]
         omitted_panels = [transport_label(p[0]) for p in panels if p not in keep]
         panels = keep
@@ -247,7 +247,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     # Shared log-x per ROW so lengths are comparable across transports (and narrow-range panels
     # don't get cramped ticks); shared y so the protocol ladder lines up. Row 0 = throughput cost,
     # row 1 = blast p99 vs routing.
-    if thesis:
+    if in_print:
         figsize = (2.45 * ncol + 1.4, 0.36 * len(yorder) + 1.8)
     else:
         figsize = (3.5 * ncol + 1.4, (0.42 * len(yorder) + 1.3) * nrow + 0.8)
@@ -363,7 +363,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     if omitted_panels:
         note += ("panels not shown in the print variant: " + "/".join(omitted_panels)
                  + " (transparent interception sits between the drawn stream panels). ")
-    T.add_method_note(fig, note + ("" if thesis else T.BLAST_LATENCY_NOTE))
+    T.add_method_note(fig, note + ("" if in_print else T.BLAST_LATENCY_NOTE))
     T.add_provenance(fig, bundle.caption() + f"  ·  {bundle.label}  ·  crypto cost = throughput ÷ same-transport routing")
 
     # Data-driven takeaway: the crypto ceiling (~one userspace/AES-NI core) is roughly transport-

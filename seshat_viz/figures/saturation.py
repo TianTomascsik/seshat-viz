@@ -169,13 +169,13 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
 
     harness_limited = _harness_limited_by_scenario(bundle.summary)
 
-    # Thesis variant: gateway sweeps only, one row, no overlay panel. The loopback row is a
+    # Print variant: gateway sweeps only, one row, no overlay panel. The loopback row is a
     # harness self-baseline (it saturates the load generator first) — its content becomes a
     # method-note sentence, and the print figure carries the two degradation modes on the
     # gateway paths alone.
-    thesis = T.thesis_variant()
+    in_print = T.print_variant()
     n_loopback_dropped = 0
-    if thesis:
+    if in_print:
         gw_scenarios = [s for s in scenarios
                         if not _panel_facts(s, sat[sat["scenario"] == s])[0]]
         n_loopback_dropped = len(scenarios) - len(gw_scenarios)
@@ -185,10 +185,10 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
 
-    n = len(scenarios) + (0 if thesis else 1)  # +1 overlay panel (full variant only)
+    n = len(scenarios) + (0 if in_print else 1)  # +1 overlay panel (full variant only)
     ncol = min(2, n)
     nrow = math.ceil(n / ncol)
-    figsize = (3.8 * ncol, 3.1 * nrow) if thesis else (5.6 * ncol, 3.6 * nrow)
+    figsize = (3.8 * ncol, 3.1 * nrow) if in_print else (5.6 * ncol, 3.6 * nrow)
     fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False)
     flat = [axes[r][c] for r in range(nrow) for c in range(ncol)]
 
@@ -316,12 +316,12 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     T.legend_below(fig, handles, ncol=min(4, len(handles)))
 
     # Overlay panel: all goodput curves together (full variant only).
-    if thesis:
+    if in_print:
         for ax in flat[len(scenarios):]:
             ax.axis("off")
         _finish(fig, bundle, saver, sat=sat, scenarios=scenarios,
                 harness_limited=harness_limited, lat_panels=lat_panels,
-                shed_panels=shed_panels, thesis=True,
+                shed_panels=shed_panels, in_print=True,
                 n_loopback_dropped=n_loopback_dropped)
         return
     axo = flat[len(scenarios)]
@@ -347,11 +347,11 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
 
     _finish(fig, bundle, saver, sat=sat, scenarios=scenarios,
             harness_limited=harness_limited, lat_panels=lat_panels,
-            shed_panels=shed_panels, thesis=False, n_loopback_dropped=0)
+            shed_panels=shed_panels, in_print=False, n_loopback_dropped=0)
 
 
 def _finish(fig, bundle: RunBundle, saver: T.Saver, *, sat, scenarios, harness_limited,
-            lat_panels, shed_panels, thesis: bool, n_loopback_dropped: int) -> None:
+            lat_panels, shed_panels, in_print: bool, n_loopback_dropped: int) -> None:
     # Headline the REAL conclusion as the takeaway, composed from the measured facts:
     # latency-degrading panels hold ~0% loss while p99 explodes; every loss-shedding
     # panel is named with ITS OWN knee and peak loss (no pooling across paths).
@@ -393,7 +393,7 @@ def _finish(fig, bundle: RunBundle, saver: T.Saver, *, sat, scenarios, harness_l
 
     T.set_headline(fig, f"{TITLE}  ·  {bundle.label}", y=1.01)
     n_limited = sum(1 for s in scenarios if harness_limited.get(str(s), False))
-    if thesis:
+    if in_print:
         note = (
             f"{len(scenarios)} gateway offered-load sweeps at "
             f"{_pinning_label(sat, bundle.summary, scenarios)} over a shared offered-load "

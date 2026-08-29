@@ -135,12 +135,12 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     try:
         fig.get_layout_engine().set(rect=(0, 0.055, 1, 0.945))
     except AttributeError:
-        pass  # no constrained layout engine (non-thesis rcParams): notes keep the old spot
+        pass  # no constrained layout engine (non-print rcParams): notes keep the old spot
 
     # --- Panel A ---
     axa = axes[0][0]
-    if T.thesis_variant():
-        # Thesis variant: the full ladder (50+ rows at print size) overwhelms the page.
+    if T.print_variant():
+        # Print variant: the full ladder (50+ rows at print size) overwhelms the page.
         # Draw a per-interface dot plot instead: one row per transport (locality order),
         # every row carrying the SAME fixed representative protocol set — the chapter's
         # family representatives extended by TLS 1.2 and the DTLS variants so every value
@@ -340,7 +340,7 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     T.add_takeaway(fig, take)
     reduction_txt = ("Left panel draws a fixed representative protocol set per interface "
                      "(absent dots are unmeasured cells, not zeros); the full per-configuration "
-                     "ladder is in the repository render. " if T.thesis_variant() else "")
+                     "ladder is in the repository render. " if T.print_variant() else "")
     T.add_method_note(fig, "matched " + cell_txt + ", 0-gateway loopback baselines excluded; "
                       "jitter derived from open-loop one-way latencies (relative), log axes; each "
                       "bar/point averages all scenarios at that cell (cipher sweeps included). "

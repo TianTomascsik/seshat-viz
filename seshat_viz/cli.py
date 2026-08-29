@@ -1,5 +1,5 @@
 """
-Command-line driver for the SESHAT thesis visualization suite.
+Command-line driver for the SESHAT visualization suite.
 
     python -m seshat_viz <results_dir> [--out figures/] [--only F1,F4] [--format pdf,png]
 
@@ -20,7 +20,7 @@ from typing import List, Optional, Tuple
 
 from . import figures as figpkg
 from .loader import load_run
-from .theme import VARIANTS, Saver, apply_thesis_style, set_chrome, set_variant, variant
+from .theme import VARIANTS, Saver, apply_print_style, set_chrome, set_variant, variant
 
 # Default results root, relative to the repo layout (seshat-viz/ sits beside SCG-SESHAT/).
 _DEFAULT_RESULTS = Path(__file__).resolve().parents[2] / "SCG-SESHAT" / "results"
@@ -145,10 +145,19 @@ def _print_manifest(saver: Saver) -> None:
     print("=" * 72)
 
 
+def _variant_arg(value: str) -> str:
+    """Validate --variant; "thesis" stays accepted as a silent alias of "print"."""
+    if value == "thesis":
+        return "print"
+    if value not in VARIANTS:
+        raise argparse.ArgumentTypeError(f"invalid choice: {value!r} (choose from {', '.join(VARIANTS)})")
+    return value
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="seshat-viz",
-        description="Generate thesis-grade figures from a SESHAT results directory.",
+        description="Generate publication-grade figures from a SESHAT results directory.",
     )
     parser.add_argument(
         "results_dir", nargs="?", default=str(_DEFAULT_RESULTS),
@@ -164,17 +173,18 @@ def main(argv: Optional[List[str]] = None) -> int:
                         help="Results root holding the two-host wire campaign dirs "
                              "(wire-run/, ab-*/, knee-*/, ...) for F26–F28; defaults to "
                              "probing the run's parent directories.")
-    parser.add_argument("--variant", default="full", choices=list(VARIANTS),
+    parser.add_argument("--variant", default="full", type=_variant_arg,
+                        metavar="{full,print}",
                         help="Render variant: 'full' draws every panel/series (exploratory "
-                             "dashboard); 'thesis' lets each figure subset its panels to a "
+                             "dashboard); 'print' lets each figure subset its panels to a "
                              "print-legible layout and recompute its takeaway accordingly. "
-                             "Pair with a dedicated --out dir (e.g. figures-thesis/).")
+                             "Pair with a dedicated --out dir (e.g. figures-print/).")
     parser.add_argument("--no-chrome", action="store_true",
                         help="Strip figure chrome for LaTeX embedding: the bold headline "
                              "(title + run label), the small grey provenance/method footer "
                              "lines, and the red takeaway banner. The suppressed text is "
                              "written per figure to <out>/captions.txt so it can be moved "
-                             "into the thesis captions.")
+                             "into a document's captions.")
     parser.add_argument("--list", action="store_true", help="List available figures and exit.")
     args = parser.parse_args(argv)
 
@@ -210,7 +220,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("  wire: none")
     print(f"  host: {bundle.caption()}")
 
-    apply_thesis_style()
+    apply_print_style()
     set_chrome(not args.no_chrome)
     set_variant(args.variant)
     saver = Saver(Path(args.out), formats=formats)

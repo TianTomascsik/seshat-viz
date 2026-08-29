@@ -101,7 +101,7 @@ def test_theme_contract():
     assert set(T.SEM) == {"ok", "warn", "bad", "neutral"}
     assert len(T.CATEGORY) == 3 and len(set(T.CATEGORY)) == 3
     assert set(T.FS) == {"annot", "small", "label", "panel", "tick"}
-    assert T.SEM["bad"] == T.ACCENT  # one red, thesis-wide
+    assert T.SEM["bad"] == T.ACCENT  # one red, suite-wide
     for m in ("cpu", "rss", "pss", "ctxsw"):
         assert m in T.METRIC
     for c in ("alone", "safety", "normal"):

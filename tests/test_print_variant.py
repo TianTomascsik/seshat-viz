@@ -1,8 +1,8 @@
 """
-Tests for the thesis render variant (--variant thesis): the theme switch itself, the nine
-per-module thesis branches, and the F12 computed context-switch takeaway.
+Tests for the print render variant (--variant print): the theme switch itself, the nine
+per-module print branches, and the F12 computed context-switch takeaway.
 
-The render tests need a reference SESHAT run on disk: point SESHAT_THESIS_RUN (matrix
+The render tests need a reference SESHAT run on disk: point SESHAT_PRINT_RUN (matrix
 run) and SESHAT_QOS_RUN (qos_isolation run) at results/<campaign>/<timestamp> dirs.
 They skip (not fail) when the variables are unset or the dirs are missing.
 Runnable under pytest or as a plain script, like the other test files.
@@ -20,10 +20,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from seshat_viz import theme  # noqa: E402
 
-_THESIS_RUN = os.environ.get("SESHAT_THESIS_RUN")
-RUN_DIR = Path(_THESIS_RUN) if _THESIS_RUN else None
+_PRINT_RUN = os.environ.get("SESHAT_PRINT_RUN") or os.environ.get("SESHAT_PRINT_RUN")
+RUN_DIR = Path(_PRINT_RUN) if _PRINT_RUN else None
 
-# Figure modules that grew a thesis branch, and a fragment their computed thesis takeaway
+# Figure modules that grew a print branch, and a fragment their computed print-variant takeaway
 # must contain (all fragments are structural wording, not data values).
 THESIS_MODULES = {
     "F11": ("validity", "headroom gate"),
@@ -54,11 +54,11 @@ class _restore_theme:
 def test_variant_switch_roundtrip_and_validation():
     with _restore_theme():
         assert theme.variant() in theme.VARIANTS
-        theme.set_variant("thesis")
-        assert theme.variant() == "thesis"
-        assert theme.thesis_variant()
+        theme.set_variant("print")
+        assert theme.variant() == "print"
+        assert theme.print_variant()
         theme.set_variant("full")
-        assert not theme.thesis_variant()
+        assert not theme.print_variant()
         with pytest.raises(ValueError):
             theme.set_variant("poster")
 
@@ -72,7 +72,7 @@ def _load_bundle():
 @pytest.fixture(scope="module")
 def bundle():
     if RUN_DIR is None or not RUN_DIR.is_dir():
-        pytest.skip(f"reference run not on disk (set SESHAT_THESIS_RUN): {RUN_DIR}")
+        pytest.skip(f"reference run not on disk (set SESHAT_PRINT_RUN): {RUN_DIR}")
     return _load_bundle()
 
 
@@ -83,9 +83,9 @@ def test_thesis_render_produces_computed_takeaway(bundle, fig_id):
     mod_name, fragment = THESIS_MODULES[fig_id]
     mod = importlib.import_module(f"seshat_viz.figures.{mod_name}")
     with _restore_theme(), tempfile.TemporaryDirectory() as td:
-        theme.apply_thesis_style()
+        theme.apply_print_style()
         theme.set_chrome(False)
-        theme.set_variant("thesis")
+        theme.set_variant("print")
         saver = theme.Saver(Path(td), formats=("png",))
         mod.make(bundle, saver)
         assert saver.manifest, f"{fig_id}: nothing rendered"
@@ -93,12 +93,12 @@ def test_thesis_render_produces_computed_takeaway(bundle, fig_id):
         assert "skipped" not in entry, f"{fig_id}: skipped — {entry.get('skipped')}"
         chrome = entry.get("chrome", [])
         takeaways = [r["text"] for r in chrome if r["kind"] == "takeaway"]
-        assert takeaways, f"{fig_id}: thesis render recorded no takeaway"
+        assert takeaways, f"{fig_id}: print render recorded no takeaway"
         joined = " ".join(takeaways)
         assert fragment.lower() in joined.lower(), (
             f"{fig_id}: takeaway lacks expected wording {fragment!r}: {joined}"
         )
-        # Every thesis takeaway must carry computed numbers, never be pure prose.
+        # Every print-variant takeaway must carry computed numbers, never be pure prose.
         assert any(ch.isdigit() for ch in joined), f"{fig_id}: takeaway carries no numbers"
 
 
@@ -114,9 +114,9 @@ def test_f24_renders_from_qos_run_with_computed_takeaway():
 
     qos_bundle = load_run(str(QOS_RUN_DIR))
     with _restore_theme(), tempfile.TemporaryDirectory() as td:
-        theme.apply_thesis_style()
+        theme.apply_print_style()
         theme.set_chrome(False)
-        theme.set_variant("thesis")
+        theme.set_variant("print")
         saver = theme.Saver(Path(td), formats=("png",))
         priority_isolation.make(qos_bundle, saver)
         entry = saver.manifest[-1]
@@ -141,7 +141,7 @@ def test_f12_full_render_records_ctxsw_takeaway(bundle):
     from seshat_viz.figures import timeline
 
     with _restore_theme(), tempfile.TemporaryDirectory() as td:
-        theme.apply_thesis_style()
+        theme.apply_print_style()
         theme.set_chrome(False)
         theme.set_variant("full")
         saver = theme.Saver(Path(td), formats=("png",))

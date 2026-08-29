@@ -127,14 +127,14 @@ def _make_grid(grid: pd.DataFrame, bundle: RunBundle, saver: T.Saver) -> None:
     protocols += [p for p in grid["protocol"].unique() if p not in protocols]
     sizes = sorted(grid["message_bytes"].dropna().unique())
 
-    # Thesis variant: the top facets draw one representative protocol per protection family
+    # Print variant: the top facets draw one representative protocol per protection family
     # (ten near-coincident lines per 4 cm facet are unreadable in print); the takeaway keeps
     # quoting the FULL grid, and the bottom inflation panel keeps every protocol. The
     # un-drawn variants track their family's curve — stated in the method note.
-    thesis = T.thesis_variant()
+    in_print = T.print_variant()
     _F16_FAMILY_REPS = ["none", "tls/1.3", "ktls/1.3", "tls/1.3+mtls", "tls/1.2+integrity"]
     draw_protocols = ([p for p in _F16_FAMILY_REPS if p in protocols] or protocols) \
-        if thesis else protocols
+        if in_print else protocols
 
     # Shared y-range across facets so interfaces are directly comparable.
     yvals = grid["rtt_p99"].to_numpy(dtype=float)
@@ -146,7 +146,7 @@ def _make_grid(grid: pd.DataFrame, bundle: RunBundle, saver: T.Saver) -> None:
     # A finite matched ratio somewhere is what earns the bottom panel (blast_p99 alone is not
     # enough: the strict baseline can match a cell whose rtt is unusable).
     have_infl = bool(grid["inflation"].notna().any())
-    if thesis:
+    if in_print:
         fig = plt.figure(figsize=(max(7.4, 1.85 * n_if), 8.0 if have_infl else 4.2))
     else:
         fig = plt.figure(figsize=(max(9.5, 3.3 * n_if), 8.2 if have_infl else 5.0))
@@ -212,10 +212,10 @@ def _make_grid(grid: pd.DataFrame, bundle: RunBundle, saver: T.Saver) -> None:
     ncol = -(-len(ordered_labels) // _rows)
     fig.legend(
         ordered_handles, ordered_labels, loc="center",
-        bbox_to_anchor=(0.5, (0.525 if thesis else 0.55) if have_infl else 0.14),
+        bbox_to_anchor=(0.5, (0.525 if in_print else 0.55) if have_infl else 0.14),
         ncol=ncol, fontsize=T.FS["small"], frameon=False, columnspacing=1.4,
         handletextpad=0.5,
-        title=None if thesis else "protocol", title_fontsize=T.FS["small"],
+        title=None if in_print else "protocol", title_fontsize=T.FS["small"],
     )
 
     # --- Bottom row: coordinated-omission inflation at a representative payload size. ---
@@ -291,13 +291,13 @@ def _make_grid(grid: pd.DataFrame, bundle: RunBundle, saver: T.Saver) -> None:
         "one-way datagram gateway cannot echo, see F4 jitter; integrity+TLS1.3 has no NULL-cipher "
         "suite so it is excluded."
     )
-    if thesis and len(draw_protocols) < len(protocols):
+    if in_print and len(draw_protocols) < len(protocols):
         note += (
             f" Print variant: the facets draw {len(draw_protocols)} representative protection "
             f"families of the {len(protocols)} protocols measured — the un-drawn variants track "
             "their family's curve; the quoted span and the inflation panel cover all protocols."
         )
-    if thesis and any(str(t) == "shm" for t in interfaces):
+    if in_print and any(str(t) == "shm" for t in interfaces):
         note += (
             " SHM blast endpoints (✕) in the inflation panel include a harness receive-poll "
             "stall on top of coordinated omission — the SHM ratio overstates pure CO; paced "
