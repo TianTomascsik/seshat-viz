@@ -45,9 +45,11 @@ PY=".venv/bin/python"
 # The two-host wire figures (F26–F28) come from the wire campaign dirs, not from a
 # matrix run — rendered only when WIRE_RESULTS points at a results/ root holding them.
 WIRE_RESULTS="${WIRE_RESULTS:-}"
+WIRE_RENDERED=0
 if [ -n "$WIRE_RESULTS" ] && [ -d "$WIRE_RESULTS/wire-run" ]; then
     "$PY" -m seshat_viz "$RUN_PROCFS" --variant print --no-chrome --only F26,F27,F28 \
         --wire-results "$WIRE_RESULTS" --out "$OUT" --format pdf,png
+    WIRE_RENDERED=1
 else
     echo "skip: wire figures F26-F28 (set WIRE_RESULTS to a SESHAT results root containing wire-run/)"
 fi
@@ -79,11 +81,11 @@ declare -A MAP=(
 # Post-render check: every mapped figure must exist, and the manifest must attribute
 # each figure to the expected campaign — a silent re-render from a stale or wrong run
 # is exactly the failure mode this guards against.
-"$PY" - "$OUT" "$RUN_PROCFS" "$RUN_EBPF" "$RUN_QOS" "$RUN_PERF" <<'EOF'
+"$PY" - "$OUT" "$RUN_PROCFS" "$RUN_EBPF" "$RUN_QOS" "$RUN_PERF" "$WIRE_RENDERED" <<'EOF'
 import json, sys
 from pathlib import Path
 
-out, run_procfs, run_ebpf, run_qos, run_perf = sys.argv[1:6]
+out, run_procfs, run_ebpf, run_qos, run_perf, wire_rendered = sys.argv[1:7]
 manifest = json.loads((Path(out) / "manifest.json").read_text())
 figs = manifest["figures"]  # dict: FIG_ID -> {files, run_dir, run_label, variant, ...}
 expected = {  # FIG_ID -> (output stem, expected source run)
@@ -103,12 +105,15 @@ expected = {  # FIG_ID -> (output stem, expected source run)
     "F12": ("f12_system_metrics_timeline", run_procfs),
     "F17": ("f17_connection_setup", run_procfs),
     "F20": ("f20_cipher_cost", run_procfs),
-    "F26": ("f26_wire_loopback_sweep", run_procfs),
-    "F27": ("f27_wire_qos", run_procfs),
-    "F28": ("f28_wire_ktls_ab", run_procfs),
     "F29": ("f29_relay_backend_ab", run_procfs),
     "F30": ("f30_hw_counters", run_perf),
 }
+if wire_rendered == "1":  # wire figures are optional — expected only when rendered
+    expected.update({
+        "F26": ("f26_wire_loopback_sweep", run_procfs),
+        "F27": ("f27_wire_qos", run_procfs),
+        "F28": ("f28_wire_ktls_ab", run_procfs),
+    })
 errors = []
 for fig_id, (stem, run) in expected.items():
     entry = figs.get(fig_id)
