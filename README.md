@@ -225,7 +225,8 @@ These reflect SESHAT's `docs/methodology.md`
   ≥64c gaps for SHM/UDS (they do not opt into the scalability tier) are the coverage wall,
   reported in the caption, not hidden. Each point is tagged with its bottleneck class, since on a
   single loopback host the flat curves are the serial per-connection data plane, not a gateway
-  fan-out defect.
+  fan-out defect. In the print variant each transport column is split into three rows,
+  plaintext routing, user-space TLS and kernel TLS, on shared per-column axes.
 
 ## Extending
 

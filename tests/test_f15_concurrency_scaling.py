@@ -19,12 +19,14 @@ Runnable either under pytest (`pytest tests/`) or as a plain script
 """
 from __future__ import annotations
 
+import contextlib
 import sys
 import tempfile
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -47,12 +49,13 @@ def _bundle(summary: pd.DataFrame, skipped: pd.DataFrame | None = None) -> RunBu
 
 
 def _row(transport: str, chain: str, conns: int, tput: float, *, busy: float,
-         bottleneck: str, harness_limited: bool) -> dict:
+         bottleneck: object, harness_limited: bool, protocol: str = "none",
+         stem: str = "none") -> dict:
     return {
-        "scenario": f"matrix_none_{transport}_{transport}_64KB_{chain}_{conns}c",
+        "scenario": f"matrix_{stem}_{transport}_{transport}_64KB_{chain}_{conns}c",
         "family": "matrix",
         "transport": transport,
-        "protocol": "none",
+        "protocol": protocol,
         "chain": chain,
         "message_bytes": 65536,
         "connections": conns,
@@ -100,13 +103,94 @@ _BUSY_HIGH = {1: 0.10, 4: 0.30, 16: 0.85, 64: 0.91}
 _BUSY_LOW = {1: 0.10, 4: 0.12, 16: 0.15, 64: 0.18}
 
 
-def _render(summary: pd.DataFrame, skipped: pd.DataFrame | None = None) -> dict:
-    with tempfile.TemporaryDirectory() as tmp:
-        saver = theme.Saver(Path(tmp), formats=("png",))
+@contextlib.contextmanager
+def _variant(name: str):
+    """Switch the render variant for one render and restore it afterwards."""
+    before = theme.variant()
+    theme.set_variant(name)
+    try:
+        yield
+    finally:
+        theme.set_variant(before)
+
+
+class _CaptureSaver(theme.Saver):
+    """Record the panel grid (labels, titles, limits, line colours) before the figure closes."""
+
+    panels: list[dict] = []
+    height: float = 0.0
+
+    def save(self, fig, name, **kw):
+        fig.canvas.draw()  # materialise tick labels so their visibility can be read
+        panels = []
+        for ax in fig.axes:
+            if not ax.patch.get_visible():  # twinx host-busy axes carry an invisible patch
+                continue
+            ss = ax.get_subplotspec()
+            panels.append({
+                "row": ss.rowspan.start, "col": ss.colspan.start,
+                "ylabel": ax.get_ylabel(), "xlabel": ax.get_xlabel(), "title": ax.get_title(),
+                "xlim": ax.get_xlim(),
+                "colors": {ln.get_color() for ln in ax.get_lines()},
+                "ticklabels": [t.get_text() for t in ax.get_xticklabels()
+                               if t.get_visible() and t.get_text()],
+                "texts": [t.get_text() for t in ax.texts],
+            })
+        self.panels = panels
+        self.height = float(fig.get_size_inches()[1])
+        return super().save(fig, name, **kw)
+
+
+def _render_capture(summary: pd.DataFrame, skipped: pd.DataFrame | None = None, *,
+                    variant: str = "full") -> tuple[dict, _CaptureSaver]:
+    with tempfile.TemporaryDirectory() as tmp, _variant(variant):
+        saver = _CaptureSaver(Path(tmp), formats=("png",))
         concurrency_scaling.make(_bundle(summary, skipped), saver)
         entry = saver.manifest[-1]
     assert "skipped" not in entry, f"F15 unexpectedly skipped: {entry.get('skipped')}"
-    return entry
+    return entry, saver
+
+
+def _render(summary: pd.DataFrame, skipped: pd.DataFrame | None = None, *,
+            variant: str = "full") -> dict:
+    return _render_capture(summary, skipped, variant=variant)[0]
+
+
+def _three_group_summary(busy_by_conns: dict[int, float], *,
+                         tproxy_kernel: bool = True) -> pd.DataFrame:
+    """
+    One series per print row group on TCP and TPROXY: plaintext routing, a user-space pair
+    (TLS 1.3 + integrity) and kernel TLS 1.3. The TPROXY routing sweep is truncated at 16c so a
+    column's rows have different reaches (the per-column shared x range case).
+    """
+    series = {
+        ("none", "none"): (10.0, 20.0, 40.0, 32.0),
+        ("tls/1.3", "tls13"): (5.0, 14.0, 30.0, 28.0),
+        ("tls/1.2+integrity", "integrity_tls12"): (4.0, 13.0, 34.0, 31.0),
+        ("ktls/1.3", "ktls13"): (5.5, 15.0, 32.0, 29.0),
+    }
+    rows = []
+    for (proto, stem), tputs in series.items():
+        for conns, tput in zip((1, 4, 16, 64), tputs):
+            rows.append(_row("tcp", "scg", conns, tput, busy=busy_by_conns[conns],
+                             bottleneck="scg-cpu", harness_limited=False,
+                             protocol=proto, stem=stem))
+            if proto == "none":
+                if conns == 64:
+                    continue  # truncated routing sweep on TPROXY
+                rows.append(_row("tproxy", "direct", conns, tput * 0.8,
+                                 busy=busy_by_conns[conns], bottleneck="harness-io",
+                                 harness_limited=True, protocol=proto, stem=stem))
+            elif proto.startswith("ktls/") and not tproxy_kernel:
+                continue
+            else:
+                rows.append(_row("tproxy", "scg", conns, tput * 0.9, busy=busy_by_conns[conns],
+                                 bottleneck="scg-cpu", harness_limited=False,
+                                 protocol=proto, stem=stem))
+    return pd.DataFrame(rows)
+
+
+_PLAIN_YLABEL = "scaling efficiency\n(% of ideal-linear)"
 
 
 def _chrome(entry: dict, kind: str) -> str:
@@ -199,6 +283,126 @@ def test_series_stem_strips_size_chain_conns():
     assert stem("matrix_none_tcp_tcp_65536B_scg_1024c") == "matrix_none_tcp_tcp"
 
 
+def _by_cell(saver: _CaptureSaver) -> dict[tuple[int, int], dict]:
+    return {(p["row"], p["col"]): p for p in saver.panels}
+
+
+def test_row_group_is_decided_by_protocol_prefix():
+    rg = concurrency_scaling._row_group
+    assert rg("none") == "routing"
+    assert rg("ktls/1.3") == "kernel" and rg("ktls/1.2+mtls") == "kernel"
+    assert rg("tls/1.3") == "user" and rg("tls/1.2+integrity") == "user"
+    assert rg("tls/1.3+mtls") == "user" and rg("dtls/1.2") == "user"
+
+
+def test_print_variant_splits_rows_by_protection_group():
+    """Print: one row per group (routing / user-space / kernel), columns = transports."""
+    _entry, saver = _render_capture(_three_group_summary(_BUSY_HIGH), variant="print")
+    cells = _by_cell(saver)
+    assert set(cells) == {(r, c) for r in range(3) for c in range(2)}, sorted(cells)
+    grey, faint = theme.protocol_color("none"), theme.GREYS["faint"]
+    user = {theme.protocol_color("tls/1.3"), theme.protocol_color("tls/1.2+integrity")}
+    kernel = {theme.protocol_color("ktls/1.3")}
+    for col in range(2):
+        assert grey in cells[(0, col)]["colors"] <= {grey, faint}, cells[(0, col)]["colors"]
+        assert cells[(1, col)]["colors"] == user | {faint}, cells[(1, col)]["colors"]
+        assert cells[(2, col)]["colors"] == kernel | {faint}, cells[(2, col)]["colors"]
+        # Per-column shared x range (the truncated TPROXY routing row spans its siblings' 64c).
+        assert cells[(0, col)]["xlim"] == cells[(1, col)]["xlim"] == cells[(2, col)]["xlim"]
+        # Transport title on the top row only; tick labels + axis label on the bottom row only.
+        assert cells[(0, col)]["title"] in ("TCP", "TPROXY")
+        assert cells[(1, col)]["title"] == "" and cells[(2, col)]["title"] == ""
+        assert cells[(0, col)]["ticklabels"] == [] and cells[(1, col)]["ticklabels"] == []
+        assert cells[(2, col)]["ticklabels"], "bottom row must carry the connection ticks"
+        assert cells[(0, col)]["xlabel"] == "" and cells[(1, col)]["xlabel"] == ""
+        assert cells[(2, col)]["xlabel"] == "connections (log)"
+    assert saver.height == pytest.approx(3.4 + 2.8 * 2)
+
+
+def test_print_rows_carry_identity_ylabels():
+    _entry, saver = _render_capture(_three_group_summary(_BUSY_HIGH), variant="print")
+    cells = _by_cell(saver)
+    assert cells[(0, 0)]["ylabel"] == "plaintext routing\n" + _PLAIN_YLABEL
+    assert cells[(1, 0)]["ylabel"] == "user-space TLS\n" + _PLAIN_YLABEL
+    assert cells[(2, 0)]["ylabel"] == "kernel TLS (kTLS)\n" + _PLAIN_YLABEL
+    assert all(cells[(r, 1)]["ylabel"] == "" for r in range(3))
+
+
+def test_full_variant_keeps_single_efficiency_row():
+    """Full: every protocol in one efficiency row (plus absolute + latency rows), no row labels."""
+    entry, saver = _render_capture(_three_group_summary(_BUSY_HIGH), variant="full")
+    cells = _by_cell(saver)
+    assert {r for r, _c in cells} == {0, 1, 2}  # efficiency / absolute / blast latency
+    assert cells[(0, 0)]["ylabel"] == _PLAIN_YLABEL
+    assert not any("plaintext routing" in p["ylabel"] for p in saver.panels)
+    top = cells[(0, 0)]["colors"]
+    for proto in ("none", "tls/1.3", "tls/1.2+integrity", "ktls/1.3"):
+        assert theme.protocol_color(proto) in top, (proto, top)
+    assert "Rows per transport" not in _chrome(entry, "method")
+
+
+def test_row_sentence_only_in_print_and_takeaway_invariant():
+    summary = _three_group_summary(_BUSY_HIGH)
+    full = _render(summary, variant="full")
+    prnt = _render(summary, variant="print")
+    method = _chrome(prnt, "method")
+    assert ("Rows per transport, top to bottom: plaintext routing, user-space TLS, "
+            "kernel TLS (kTLS)") in method, method
+    assert "Rows per transport" not in _chrome(full, "method")
+    # The split is presentation only: the load-bearing numbers must not move.
+    assert _chrome(prnt, "takeaway") == _chrome(full, "takeaway")
+
+
+def test_missing_group_drops_its_row():
+    # Routing-only data (the existing fixtures) keeps the historical single-row print figure.
+    entry, saver = _render_capture(_scaling_summary(busy_by_conns=_BUSY_HIGH),
+                                   _skipped_tproxy_64c(), variant="print")
+    assert {r for r, _c in _by_cell(saver)} == {0}
+    assert _by_cell(saver)[(0, 0)]["ylabel"] == _PLAIN_YLABEL
+    assert "Rows per transport" not in _chrome(entry, "method")
+    assert saver.height == pytest.approx(3.4)
+    # No kernel series anywhere → two rows, and the sentence names only the rows present.
+    summary = _three_group_summary(_BUSY_HIGH)
+    summary = summary[~summary["protocol"].str.startswith("ktls/")]
+    entry, saver = _render_capture(summary, variant="print")
+    assert {r for r, _c in _by_cell(saver)} == {0, 1}
+    method = _chrome(entry, "method")
+    assert "top to bottom: plaintext routing, user-space TLS," in method, method
+    assert "kernel TLS" not in method, method
+
+
+def test_transport_missing_a_group_gets_a_placeholder_panel():
+    _entry, saver = _render_capture(_three_group_summary(_BUSY_HIGH, tproxy_kernel=False),
+                                    variant="print")
+    cells = _by_cell(saver)
+    assert set(cells) == {(r, c) for r in range(3) for c in range(2)}
+    tproxy_kernel = cells[(2, 1)]
+    assert tproxy_kernel["colors"] == set(), tproxy_kernel["colors"]
+    assert any("no kernel TLS (kTLS) series" in t for t in tproxy_kernel["texts"])
+    assert cells[(2, 0)]["colors"] == {theme.protocol_color("ktls/1.3"), theme.GREYS["faint"]}
+
+
+def test_is_loadgen_tolerates_missing_bottleneck():
+    """derive.scaling_table aggregates an all-NaN bottleneck to pd.NA; its truth value raised
+    'boolean value of NA is ambiguous' and sank the whole figure."""
+    f = concurrency_scaling._is_loadgen
+    assert f(pd.NA, False) is False
+    assert f(pd.NA, pd.NA) is False
+    assert f(np.nan, None) is False
+    assert f(None, np.True_) is True
+    assert f("harness-io", pd.NA) is True
+
+
+def test_render_survives_na_bottleneck_series():
+    summary = _scaling_summary(busy_by_conns=_BUSY_HIGH)
+    tcp = summary["transport"] == "tcp"
+    summary.loc[tcp, "bottleneck"] = np.nan  # → pd.NA after aggregation
+    summary.loc[tcp, "harness_limited"] = False
+    for variant in ("full", "print"):
+        entry = _render(summary, _skipped_tproxy_64c(), variant=variant)
+        assert "gateway-bound" in _chrome(entry, "takeaway")
+
+
 if __name__ == "__main__":
     test_takeaway_compares_at_common_depth_not_endpoint_max()
     test_truncated_fallback_series_is_disclosed_with_reason()
@@ -208,4 +412,13 @@ if __name__ == "__main__":
     test_single_only_reason_is_per_transport()
     test_is_loadgen_accepts_numpy_bool()
     test_series_stem_strips_size_chain_conns()
+    test_row_group_is_decided_by_protocol_prefix()
+    test_print_variant_splits_rows_by_protection_group()
+    test_print_rows_carry_identity_ylabels()
+    test_full_variant_keeps_single_efficiency_row()
+    test_row_sentence_only_in_print_and_takeaway_invariant()
+    test_missing_group_drops_its_row()
+    test_transport_missing_a_group_gets_a_placeholder_panel()
+    test_is_loadgen_tolerates_missing_bottleneck()
+    test_render_survives_na_bottleneck_series()
     print("ok")

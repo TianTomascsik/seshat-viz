@@ -10,6 +10,12 @@ and so hides the LEVEL gap between transports (UDS plateaus ~38 Gbps, SHM ~28–
 once encrypted, routed TCP climbs into the 100s); the absolute panel restores it. Bottom: p99
 tail latency under a saturating blast (queueing-dominated), where added concurrency is paid for.
 
+The print variant keeps the efficiency row only and splits it into one row per protection
+group — plaintext routing on top, the user-space TLS profiles in the middle, the kernel TLS
+(kTLS) profiles at the bottom — with every row of a column sharing the union connection range,
+so a routing sweep truncated at 16c is drawn against its encrypted siblings' 64c reach rather
+than stretched to look converged; a group absent from the whole run drops its row.
+
 Why curves flatten (or, once encrypted, decline) is the point of this figure, so each point is
 drawn with its SESHAT bottleneck class: a **hollow** marker is load-generator / host bound
 (`harness-io` / `host-saturated`, or flagged `harness_limited`), a **filled** marker is
@@ -74,7 +80,11 @@ def _is_loadgen(bottleneck: object, harness_limited: object) -> bool:
     # an identity check against True would silently ignore np.True_.
     if isinstance(harness_limited, (bool, np.bool_)) and bool(harness_limited):
         return True
-    return str(bottleneck or "") in _LOADGEN_BOTTLENECKS
+    # derive.scaling_table aggregates an all-NaN bottleneck column to pd.NA, whose truth value
+    # raises ("boolean value of NA is ambiguous"); an unrecorded class is not load-generator.
+    if bottleneck is None or (np.ndim(bottleneck) == 0 and pd.isna(bottleneck)):
+        return False
+    return str(bottleneck) in _LOADGEN_BOTTLENECKS
 
 
 def _preferred_chain(g: pd.DataFrame) -> pd.DataFrame:
@@ -131,6 +141,105 @@ def _busy_profile(plotted: pd.DataFrame) -> "pd.Series | None":
     if hb.empty:
         return None
     return hb.groupby("connections")["host_busy_frac_p95"].median().sort_index()
+
+
+# Print-variant row groups, top to bottom. Membership is decided by protocol prefix so a
+# profile a later run adds lands in the right row without a table edit.
+_ROW_GROUPS = (
+    ("routing", "plaintext routing"),
+    ("user", "user-space TLS"),
+    ("kernel", "kernel TLS (kTLS)"),
+)
+
+
+def _row_group(protocol: object) -> str:
+    """Print-variant row a protection profile belongs to: routing / user-space / kernel."""
+    p = str(protocol)
+    if p == "none":
+        return "routing"
+    return "kernel" if p.startswith("ktls/") else "user"
+
+
+def _efficiency_panel(ax: "plt.Axes", sub: pd.DataFrame, xs: list, *,
+                      has_bottleneck: bool, declutter: bool,
+                      busy_rows: "pd.DataFrame | None" = None,
+                      busy_label: bool = False) -> "tuple[set[str], bool]":
+    """
+    One scaling-efficiency panel: the ideal-linear guide (labelled at xs[-1]), one line per
+    protocol with hollow/filled boundness faces, endpoint % labels (thinned to >=4 % apart when
+    `declutter`), log2 x with `xs` as ticks, a 0–112 % y axis and the grid. When `busy_rows` is
+    given, the median host_busy_frac_p95 per connection count over those rows is drawn on a
+    right axis (label + ticks only when `busy_label`). Returns (protocols drawn, busy drawn).
+    """
+    import matplotlib.ticker as mticker
+
+    protos: set[str] = set()
+    ann_ys: list[float] = []  # endpoint labels already placed (declutter)
+    # Plot scaling EFFICIENCY (achieved speedup ÷ ideal-linear speedup, %) rather than raw
+    # speedup: a shared ideal diagonal to 1024× would crush every real curve (which peak
+    # below ~10×) onto the x-axis. 100% = perfect linear scaling; the fall-off to the
+    # bottleneck is read directly on a bounded 0–100% axis.
+    ax.axhline(100.0, ls=":", color=T.GREYS["faint"], lw=0.8, zorder=1)
+    ax.annotate("ideal (linear)", (xs[-1], 100.0), xytext=(-4, 4),
+                textcoords="offset points", ha="right", fontsize=T.FS["annot"],
+                color=T.GREYS["muted"], style="italic")
+    for proto, pg in sub.groupby("protocol", observed=True):
+        pg = pg.sort_values("connections")
+        protos.add(str(proto))
+        c = T.protocol_color(str(proto))
+        eff = (pg["tput_norm"] / pg["ideal_norm"]).where(pg["ideal_norm"] != 0) * 100.0
+        eff = pd.to_numeric(eff, errors="coerce").astype(float)  # NA → NaN, never ambiguous
+        ax.plot(pg["connections"], eff, color=c, lw=1.8, zorder=3,
+                label=protocol_label(str(proto)))
+        # Overlay per-point bottleneck markers: hollow = load-generator/host bound (not the
+        # gateway's fan-out limit), filled = gateway-path bound. This is the answer to "why
+        # doesn't it scale" drawn on the data rather than asserted in prose.
+        if has_bottleneck:
+            bvals = pg.get("bottleneck", pd.Series([pd.NA] * len(pg)))
+            hvals = pg.get("harness_limited", pd.Series([pd.NA] * len(pg)))
+            face = [("#FFFFFF" if _is_loadgen(b, h) else c) for b, h in zip(bvals, hvals)]
+        else:
+            face = c
+        ax.scatter(pg["connections"], eff, facecolors=face, edgecolors=c,
+                   linewidths=1.3, s=42, zorder=4)
+        last_eff = eff.iloc[-1]
+        if np.isfinite(last_eff):
+            # Truncated / chain-fallback series are disclosed in the method note (F15-1);
+            # the historical endpoint dagger is retired — the hollow/filled marker already
+            # encodes boundness and "†" is a retired encoding.
+            # Declutter (print variant): skip labels that would overprint a neighbour
+            # (<4% apart) — the clustered series share the same reading anyway.
+            if not (declutter and any(abs(last_eff - y0) < 4.0 for y0 in ann_ys)):
+                ann_ys.append(float(last_eff))
+                ax.annotate(f"{last_eff:.0f}%", (pg["connections"].iloc[-1], last_eff),
+                            xytext=(7, 0), textcoords="offset points", va="center",
+                            fontsize=T.FS["annot"], color=T.GREYS["ink"])
+    ax.set_xscale("log", base=2)
+    ax.set_xticks(xs)
+    ax.get_xaxis().set_major_formatter(mticker.ScalarFormatter())
+    ax.set_ylim(0, 112)
+    ax.margins(x=0.16)
+    ax.grid(True, which="both")
+
+    # Host-busy overlay (print variant): the median p95 profile over `busy_rows` on a right
+    # axis, so the high-concurrency co-limit is visible in-panel.
+    drawn = False
+    prof = _busy_profile(busy_rows) if busy_rows is not None else None
+    if prof is not None and len(prof):
+        ax_b = ax.twinx()
+        ax_b.plot(prof.index, prof.to_numpy() * 100.0, color=T.GREYS["annot"],
+                  ls="--", lw=1.2, zorder=2)
+        drawn = True
+        ax_b.set_ylim(0, 112)
+        ax_b.grid(False)
+        ax_b.spines["right"].set_visible(busy_label)
+        if busy_label:
+            ax_b.set_ylabel("host busy, p95 (%)", fontsize=T.FS["small"],
+                            color=T.GREYS["annot"])
+            ax_b.tick_params(axis="y", labelsize=T.FS["tick"], colors=T.GREYS["annot"])
+        else:
+            ax_b.set_yticks([])
+    return protos, drawn
 
 
 def make(bundle: RunBundle, saver: T.Saver) -> None:
@@ -198,20 +307,30 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     # Print variant: the efficiency row alone (the absolute-throughput level gap is stated
     # in prose, the blast-latency row is CO-uncorrected and banned from the print variant), no
     # placeholder columns (their reason moves to the method note), plus a per-panel host-busy
-    # line so the co-limit is visible on the figure itself.
+    # line so the co-limit is visible on the figure itself. That efficiency row is split into
+    # one row per protection group (_ROW_GROUPS): nine near-coincident lines in a 5 cm panel
+    # were unreadable in print, so plaintext routing, user-space TLS and kernel TLS each get
+    # their own axes. A group absent from the whole run drops its row.
     in_print = T.print_variant()
     if in_print:
         columns = transports
+        grp = tbl["protocol"].map(_row_group)
+        row_groups = [(key, label, grp == key) for key, label in _ROW_GROUPS
+                      if bool((grp == key).any())]
+    else:
+        row_groups = [("all", "", pd.Series(True, index=tbl.index))]
+    split_rows = in_print and len(row_groups) >= 2
 
     have_lat = "latency_p99_us_mean" in tbl.columns and tbl["latency_p99_us_mean"].notna().any()
     have_lat = have_lat and not in_print
-    # Rows: (0) scaling efficiency %, (1) ABSOLUTE throughput in Gbps, (2) p99 tail latency when
-    # present. The efficiency axis normalizes each series to its own 1-connection throughput, which
-    # HIDES that UDS plateaus at ~38 Gbps and SHM at ~28–37 while routed TCP climbs into the 100s;
-    # the absolute panel restores that transport-level difference the % axis flattens away.
+    # Rows (full variant): (0) scaling efficiency %, (1) ABSOLUTE throughput in Gbps, (2) p99
+    # tail latency when present. The efficiency axis normalizes each series to its own
+    # 1-connection throughput, which HIDES that UDS plateaus at ~38 Gbps and SHM at ~28–37 while
+    # routed TCP climbs into the 100s; the absolute panel restores that transport-level
+    # difference the % axis flattens away.
     row_abs = None if in_print else 1
     row_lat = 2 if have_lat else None
-    nrows = 1 if in_print else (3 if have_lat else 2)
+    nrows = len(row_groups) if in_print else (3 if have_lat else 2)
 
     import matplotlib.pyplot as plt
 
@@ -219,11 +338,18 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     # stop at 16c and TCP sweeps to 1024c; a shared axis stretched the SHM/UDS panels to 1024
     # with three points bunched at the left, visually implying "SHM died early" when it was
     # simply never swept that far. Per-panel ranges make the coverage difference honest.
+    # WITHIN a column the print rows do share x (Axes.sharex below): a routing sweep truncated
+    # at 16c is then drawn over the same 1–64c range as its encrypted siblings, so the
+    # truncation stays visible instead of being stretched to look converged.
     if in_print:
-        figsize = (1.95 * len(columns) + 1.5, 3.4)
+        figsize = (1.95 * len(columns) + 1.5, 3.4 + 2.8 * (len(row_groups) - 1))
     else:
         figsize = (4.7 * len(columns) + 1.4, 3.5 * nrows)
     fig, axes = plt.subplots(nrows, len(columns), figsize=figsize, squeeze=False, sharex=False)
+    if split_rows:
+        for col in range(len(columns)):
+            for r in range(1, len(row_groups)):
+                axes[r][col].sharex(axes[0][col])
 
     protos_seen: set[str] = set()
     busy_drawn = False  # print-variant host-busy overlay actually drawn → key it in the legend
@@ -243,86 +369,49 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
                        transform=axtop.transAxes, ha="center", va="center",
                        fontsize=T.FS["small"], color=T.GREYS["muted"], style="italic")
             continue
-        sub = tbl[tbl["transport"].astype(str) == tr]
-        conns = sorted(sub["connections"].unique())
-        ax_t = axes[0][col]
-        ann_ys: list[float] = []  # print variant: endpoint labels already placed (declutter)
-        # Plot scaling EFFICIENCY (achieved speedup ÷ ideal-linear speedup, %) rather than raw
-        # speedup: a shared ideal diagonal to 1024× would crush every real curve (which peak
-        # below ~10×) onto the x-axis. 100% = perfect linear scaling; the fall-off to the
-        # bottleneck is read directly on a bounded 0–100% axis.
-        ax_t.axhline(100.0, ls=":", color=T.GREYS["faint"], lw=0.8, zorder=1)
-        ax_t.annotate("ideal (linear)", (conns[-1], 100.0), xytext=(-4, 4),
-                      textcoords="offset points", ha="right", fontsize=T.FS["annot"],
-                      color=T.GREYS["muted"], style="italic")
-        for proto, pg in sub.groupby("protocol", observed=True):
-            pg = pg.sort_values("connections")
-            protos_seen.add(str(proto))
-            c = T.protocol_color(str(proto))
-            eff = (pg["tput_norm"] / pg["ideal_norm"]).where(pg["ideal_norm"] != 0) * 100.0
-            ax_t.plot(pg["connections"], eff, color=c, lw=1.8, zorder=3,
-                      label=protocol_label(str(proto)))
-            # Overlay per-point bottleneck markers: hollow = load-generator/host bound (not the
-            # gateway's fan-out limit), filled = gateway-path bound. This is the answer to "why
-            # doesn't it scale" drawn on the data rather than asserted in prose.
-            if has_bottleneck:
-                bvals = pg.get("bottleneck", pd.Series([pd.NA] * len(pg)))
-                hvals = pg.get("harness_limited", pd.Series([pd.NA] * len(pg)))
-                face = [("#FFFFFF" if _is_loadgen(b, h) else c) for b, h in zip(bvals, hvals)]
-            else:
-                face = c
-            ax_t.scatter(pg["connections"], eff, facecolors=face, edgecolors=c,
-                         linewidths=1.3, s=42, zorder=4)
-            last_eff = eff.iloc[-1]
-            if np.isfinite(last_eff):
-                # Truncated / chain-fallback series are disclosed in the method note (F15-1);
-                # the historical endpoint dagger is retired — the hollow/filled marker already
-                # encodes boundness and "†" is a retired encoding.
-                # Print variant: skip labels that would overprint a neighbour (<4% apart) —
-                # the clustered series share the same reading anyway.
-                if not (in_print and any(abs(last_eff - y0) < 4.0 for y0 in ann_ys)):
-                    ann_ys.append(float(last_eff))
-                    ax_t.annotate(f"{last_eff:.0f}%", (pg["connections"].iloc[-1], last_eff),
-                                  xytext=(7, 0), textcoords="offset points", va="center",
-                                  fontsize=T.FS["annot"], color=T.GREYS["ink"])
-        ax_t.set_xscale("log", base=2)
-        ax_t.set_xticks(conns)
-        ax_t.get_xaxis().set_major_formatter(plt.matplotlib.ticker.ScalarFormatter())
-        T.panel_title(ax_t, transport_label(tr))
-        if col == 0:
-            ax_t.set_ylabel("scaling efficiency\n(% of ideal-linear)")
-        ax_t.set_ylim(0, 112)
-        ax_t.margins(x=0.16)
-        ax_t.grid(True, which="both")
+        sub_tr = tbl[tbl["transport"].astype(str) == tr]
+        # Union of the connection counts over every row of this column (per-column x range).
+        conns = sorted(int(c) for c in sub_tr["connections"].unique())
+        pt = plotted[plotted["transport"].astype(str) == tr] if not plotted.empty else plotted
+        for r, (gkey, glabel, gmask) in enumerate(row_groups):
+            ax_t = axes[r][col]
+            sub = sub_tr[gmask.loc[sub_tr.index]]
+            if r == 0:
+                T.panel_title(ax_t, transport_label(tr))
+            if col == 0:
+                ax_t.set_ylabel((glabel + "\n" if split_rows else "")
+                                + "scaling efficiency\n(% of ideal-linear)")
+            if sub.empty:
+                # This transport has no scaling series in the group: keep the frame (shared x
+                # range, same y axis) so the gap reads as "not measured here", not as a
+                # missing panel.
+                ax_t.set_ylim(0, 112)
+                ax_t.grid(True, which="both")
+                ax_t.text(0.5, 0.5, f"no {glabel} series\n(see caption)",
+                          transform=ax_t.transAxes, ha="center", va="center",
+                          fontsize=T.FS["small"], color=T.GREYS["muted"], style="italic")
+                continue
+            # Print variant: this row's host-busy profile (median p95 over its plotted rows for
+            # this transport) on a right axis, so the high-concurrency co-limit is in-panel.
+            busy_rows = None
+            if in_print and not pt.empty and "host_busy_frac_p95" in pt.columns:
+                busy_rows = pt[pt["protocol"].map(_row_group) == gkey] if split_rows else pt
+            protos, drawn = _efficiency_panel(
+                ax_t, sub, conns, has_bottleneck=has_bottleneck, declutter=in_print,
+                busy_rows=busy_rows, busy_label=(col == len(columns) - 1))
+            protos_seen |= protos
+            busy_drawn = busy_drawn or drawn
 
-        # Print variant: overlay this transport's host-busy profile (median p95 over its plotted
-        # rows) on a right axis, so the high-concurrency co-limit is visible in-panel.
         if in_print:
-            ax_t.set_xlabel("connections (log)")
+            bottom = axes[len(row_groups) - 1][col]
+            bottom.set_xlabel("connections (log)")
             if len(conns) > 4:
-                ax_t.tick_params(axis="x", labelrotation=45)
-            if not plotted.empty and "host_busy_frac_p95" in plotted.columns:
-                pt = plotted[plotted["transport"].astype(str) == tr]
-                hb = pt[["connections", "host_busy_frac_p95"]].apply(
-                    pd.to_numeric, errors="coerce").dropna()
-                if not hb.empty:
-                    prof = hb.groupby("connections")["host_busy_frac_p95"].median().sort_index()
-                    ax_b = ax_t.twinx()
-                    ax_b.plot(prof.index, prof.to_numpy() * 100.0, color=T.GREYS["annot"],
-                              ls="--", lw=1.2, zorder=2)
-                    busy_drawn = True
-                    ax_b.set_ylim(0, 112)
-                    ax_b.grid(False)
-                    ax_b.spines["right"].set_visible(col == len(columns) - 1)
-                    if col == len(columns) - 1:
-                        ax_b.set_ylabel("host busy, p95 (%)", fontsize=T.FS["small"],
-                                        color=T.GREYS["annot"])
-                        ax_b.tick_params(axis="y", labelsize=T.FS["tick"],
-                                         colors=T.GREYS["annot"])
-                    else:
-                        ax_b.set_yticks([])
+                bottom.tick_params(axis="x", labelrotation=45)
+            for r in range(len(row_groups) - 1):
+                axes[r][col].tick_params(axis="x", labelbottom=False)
             continue
 
+        sub = sub_tr
         # ---- Row 1: ABSOLUTE throughput (Gbps). The efficiency panel above normalizes each
         # series to its own single-connection point, which flattens away the LEVEL gap between
         # transports: routed TCP sits far above the encrypted / IPC bands (UDS ~38, SHM ~28–37).
@@ -463,6 +552,11 @@ def make(bundle: RunBundle, saver: T.Saver) -> None:
     if in_print:
         axis_txt = ("y = achieved throughput ÷ ideal-linear (%); dashed grey line (right "
                     "axis) = median host busy p95 per connection count. ")
+        if split_rows:
+            axis_txt += ("Rows per transport, top to bottom: "
+                         + ", ".join(label for _key, label, _mask in row_groups)
+                         + ", sharing each column's x range and efficiency axis; the "
+                           "host-busy line is the median over that row's series. ")
     else:
         axis_txt = ("Top y = achieved throughput ÷ ideal-linear (%); middle y = absolute "
                     "throughput (Gbps), the level gap the efficiency axis normalizes away. ")
